@@ -1,0 +1,113 @@
+name: Release
+
+# Manually dispatched: bumps the workspace version, tags it, builds the portable
+# binaries for every supported target, and publishes a GitHub Release with the artifacts.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Semver bump level"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    name: Bump version & tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-edit
+      - name: Bump workspace version
+        id: bump
+        run: |
+          cargo set-version --bump "${{ inputs.bump }}"
+          VERSION="$(cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[] | select(.name=="harnesssphere") | .version')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "New version: $VERSION"
+      - name: Commit and tag
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(release): v${{ steps.bump.outputs.version }}"
+          git tag "v${{ steps.bump.outputs.version }}"
+          git push origin HEAD:"${{ github.ref_name }}" --follow-tags
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: bump
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-musl,      os: ubuntu-latest, cross: true }
+          - { target: aarch64-unknown-linux-musl,     os: ubuntu-latest, cross: true }
+          - { target: armv7-unknown-linux-musleabihf, os: ubuntu-latest, cross: true }
+          - { target: x86_64-apple-darwin,            os: macos-latest,  cross: false }
+          - { target: aarch64-apple-darwin,           os: macos-latest,  cross: false }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "v${{ needs.bump.outputs.version }}"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Install cross
+        if: matrix.cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
+      - name: Build release binary (otlp + ingest)
+        shell: bash
+        run: |
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            cross build --release --locked --target "${{ matrix.target }}" \
+              -p harnesssphere --features otlp,ingest
+          else
+            cargo build --release --locked --target "${{ matrix.target }}" \
+              -p harnesssphere --features otlp,ingest
+          fi
+      - name: Package
+        shell: bash
+        run: |
+          DIR="target/${{ matrix.target }}/release"
+          TAR="harnesssphere-v${{ needs.bump.outputs.version }}-${{ matrix.target }}.tar.gz"
+          tar -czf "$TAR" -C "$DIR" harnesssphere
+          sha256sum "$TAR" > "$TAR.sha256" 2>/dev/null || shasum -a 256 "$TAR" > "$TAR.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harnesssphere-${{ matrix.target }}
+          path: |
+            harnesssphere-*.tar.gz
+            harnesssphere-*.tar.gz.sha256
+
+  release:
+    name: GitHub Release
+    needs: [bump, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ needs.bump.outputs.version }}"
+          name: "v${{ needs.bump.outputs.version }}"
+          generate_release_notes: true
+          files: |
+            dist/harnesssphere-*.tar.gz
+            dist/harnesssphere-*.tar.gz.sha256

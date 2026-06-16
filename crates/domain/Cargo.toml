@@ -4,6 +4,8 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "HarnessSphere domain: canonical telemetry signal model, ports and pure policies."
 
 [dependencies]
 async-trait.workspace = true

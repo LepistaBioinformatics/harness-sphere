@@ -14,13 +14,16 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.95"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/LepistaBioinformatics/harness-sphere"
 
 [workspace.dependencies]
-harnesssphere-domain = { path = "crates/domain" }
-harnesssphere-runtime = { path = "crates/runtime" }
-harnesssphere-collectors = { path = "crates/collectors" }
-harnesssphere-export = { path = "crates/export" }
-harnesssphere-ingest = { path = "crates/ingest" }
+# `version` is required (alongside `path`) so the crates are publishable to crates.io.
+# `cargo set-version` keeps these in sync with the package version on release.
+harnesssphere-domain = { path = "crates/domain", version = "0.1.0" }
+harnesssphere-runtime = { path = "crates/runtime", version = "0.1.0" }
+harnesssphere-collectors = { path = "crates/collectors", version = "0.1.0" }
+harnesssphere-export = { path = "crates/export", version = "0.1.0" }
+harnesssphere-ingest = { path = "crates/ingest", version = "0.1.0" }
 
 async-trait = "0.1"
 thiserror = "2"

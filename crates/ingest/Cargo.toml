@@ -4,6 +4,8 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "HarnessSphere ingest plane: local OTLP receiver with host enrichment."
 
 [dependencies]
 harnesssphere-domain.workspace = true

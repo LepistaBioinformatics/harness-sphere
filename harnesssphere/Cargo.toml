@@ -4,6 +4,8 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "Unified single-binary OpenTelemetry watcher for host, container, gateway and AI (Claw/Harness) telemetry."
 default-run = "harnesssphere"
 
 [[bin]]
