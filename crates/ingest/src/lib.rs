@@ -10,8 +10,8 @@
 
 use async_trait::async_trait;
 use harnesssphere_domain::{
-    AttrValue, Enricher, Metric, MetricKind, Receiver, ReceiverDescriptor, RecvError, Signal,
-    SignalSink,
+    AttrValue, Attributes, Enricher, Metric, MetricKind, Receiver, ReceiverDescriptor, RecvError,
+    Signal, SignalSink,
 };
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -93,9 +93,17 @@ impl MetricsService for MetricsSvc {
 }
 
 /// Walks the OTLP request and flattens it into canonical signals.
+///
+/// Resource-level attributes (`service.name`, `gen_ai.provider.name`, `gen_ai.request.model`,
+/// …) carry the origin identity, so they are merged onto every data point — otherwise an
+/// ingested metric would lose which service/model it came from.
 fn convert(req: ExportMetricsServiceRequest) -> Vec<Signal> {
     let mut out = Vec::new();
     for rm in req.resource_metrics {
+        let resource_attrs: Attributes = rm
+            .resource
+            .map(|r| r.attributes.into_iter().filter_map(to_attr).collect())
+            .unwrap_or_default();
         for sm in rm.scope_metrics {
             for m in sm.metrics {
                 let name = m.name;
@@ -103,7 +111,7 @@ fn convert(req: ExportMetricsServiceRequest) -> Vec<Signal> {
                 match m.data {
                     Some(metric::Data::Gauge(g)) => {
                         for dp in g.data_points {
-                            push_number(&mut out, &name, &unit, MetricKind::Gauge, dp);
+                            push_number(&mut out, &name, &unit, MetricKind::Gauge, dp, &resource_attrs);
                         }
                     }
                     Some(metric::Data::Sum(s)) => {
@@ -113,7 +121,7 @@ fn convert(req: ExportMetricsServiceRequest) -> Vec<Signal> {
                             MetricKind::UpDownCounter
                         };
                         for dp in s.data_points {
-                            push_number(&mut out, &name, &unit, kind, dp);
+                            push_number(&mut out, &name, &unit, kind, dp, &resource_attrs);
                         }
                     }
                     // Histogram / ExponentialHistogram / Summary: not mapped in v1.
@@ -131,6 +139,7 @@ fn push_number(
     unit: &Option<String>,
     kind: MetricKind,
     dp: NumberDataPoint,
+    resource_attrs: &Attributes,
 ) {
     let value = match dp.value {
         Some(number_data_point::Value::AsDouble(d)) => d,
@@ -140,6 +149,9 @@ fn push_number(
     let mut metric = Metric::now(name, kind, value);
     if let Some(u) = unit {
         metric = metric.with_unit(u.clone());
+    }
+    for (k, v) in resource_attrs {
+        metric = metric.attr(k.clone(), v.clone());
     }
     for kv in dp.attributes {
         if let Some((k, v)) = to_attr(kv) {
@@ -168,6 +180,17 @@ mod tests {
     use opentelemetry_proto::tonic::metrics::v1::{
         Gauge, Metric as PbMetric, ResourceMetrics, ScopeMetrics, Sum,
     };
+    use opentelemetry_proto::tonic::resource::v1::Resource;
+
+    fn str_kv(key: &str, val: &str) -> PbKeyValue {
+        PbKeyValue {
+            key: key.into(),
+            value: Some(AnyValue {
+                value: Some(any_value::Value::StringValue(val.into())),
+            }),
+            ..Default::default()
+        }
+    }
 
     fn double_dp(value: f64, attrs: Vec<PbKeyValue>) -> NumberDataPoint {
         NumberDataPoint {
@@ -177,9 +200,13 @@ mod tests {
         }
     }
 
-    fn request_with(metric: PbMetric) -> ExportMetricsServiceRequest {
+    fn request_with(metric: PbMetric, resource_attrs: Vec<PbKeyValue>) -> ExportMetricsServiceRequest {
         ExportMetricsServiceRequest {
             resource_metrics: vec![ResourceMetrics {
+                resource: Some(Resource {
+                    attributes: resource_attrs,
+                    ..Default::default()
+                }),
                 scope_metrics: vec![ScopeMetrics {
                     metrics: vec![metric],
                     ..Default::default()
@@ -190,22 +217,19 @@ mod tests {
     }
 
     #[test]
-    fn maps_gauge_with_attribute_and_unit() {
-        let kv = PbKeyValue {
-            key: "system.memory.state".into(),
-            value: Some(AnyValue {
-                value: Some(any_value::Value::StringValue("used".into())),
-            }),
-            ..Default::default()
-        };
-        let req = request_with(PbMetric {
-            name: "system.memory.usage".into(),
-            unit: "By".into(),
-            data: Some(metric::Data::Gauge(Gauge {
-                data_points: vec![double_dp(123.0, vec![kv])],
-            })),
-            ..Default::default()
-        });
+    fn maps_gauge_keeps_unit_dp_attr_and_resource_identity() {
+        let req = request_with(
+            PbMetric {
+                name: "system.memory.usage".into(),
+                unit: "By".into(),
+                data: Some(metric::Data::Gauge(Gauge {
+                    data_points: vec![double_dp(123.0, vec![str_kv("system.memory.state", "used")])],
+                })),
+                ..Default::default()
+            },
+            // origin identity lives on the Resource — must survive ingest
+            vec![str_kv("service.name", "openclaw")],
+        );
 
         let signals = convert(req);
         assert_eq!(signals.len(), 1);
@@ -217,28 +241,41 @@ mod tests {
         assert_eq!(m.value, 123.0);
         assert_eq!(m.unit.as_deref(), Some("By"));
         assert!(m.attributes.iter().any(|(k, _)| k == "system.memory.state"));
+        // the dropped-resource bug regression check:
+        assert!(
+            m.attributes
+                .iter()
+                .any(|(k, v)| k == "service.name" && matches!(v, AttrValue::Str(s) if s == "openclaw")),
+            "resource-level service.name must be merged onto the data point"
+        );
     }
 
     #[test]
     fn monotonic_sum_maps_to_counter_nonmonotonic_to_updown() {
-        let mono = request_with(PbMetric {
-            name: "some.counter".into(),
-            data: Some(metric::Data::Sum(Sum {
-                data_points: vec![double_dp(1.0, vec![])],
-                is_monotonic: true,
+        let mono = request_with(
+            PbMetric {
+                name: "some.counter".into(),
+                data: Some(metric::Data::Sum(Sum {
+                    data_points: vec![double_dp(1.0, vec![])],
+                    is_monotonic: true,
+                    ..Default::default()
+                })),
                 ..Default::default()
-            })),
-            ..Default::default()
-        });
-        let nonmono = request_with(PbMetric {
-            name: "some.level".into(),
-            data: Some(metric::Data::Sum(Sum {
-                data_points: vec![double_dp(1.0, vec![])],
-                is_monotonic: false,
+            },
+            vec![],
+        );
+        let nonmono = request_with(
+            PbMetric {
+                name: "some.level".into(),
+                data: Some(metric::Data::Sum(Sum {
+                    data_points: vec![double_dp(1.0, vec![])],
+                    is_monotonic: false,
+                    ..Default::default()
+                })),
                 ..Default::default()
-            })),
-            ..Default::default()
-        });
+            },
+            vec![],
+        );
 
         let Signal::Metric(c) = &convert(mono)[0] else {
             panic!("metric");

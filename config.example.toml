@@ -14,4 +14,4 @@ metric_export_interval_secs = 15
 
 # Local OTLP ingest receiver (build with --features ingest)
 ingest_enabled = false           # accept OTLP that OpenClaw/Hermes push to us
-ingest_endpoint = "0.0.0.0:4317" # gRPC bind address for the receiver
+ingest_endpoint = "0.0.0.0:4318" # gRPC bind address for the receiver

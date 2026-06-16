@@ -147,6 +147,15 @@ impl Signal {
         };
         attrs.push((key.into(), value.into()));
     }
+
+    /// Read-only view of this signal's attributes.
+    pub fn attributes(&self) -> &Attributes {
+        match self {
+            Signal::Metric(m) => &m.attributes,
+            Signal::Log(l) => &l.attributes,
+            Signal::Span(s) => &s.attributes,
+        }
+    }
 }
 
 /// Ergonomic constructors for the source adapters.

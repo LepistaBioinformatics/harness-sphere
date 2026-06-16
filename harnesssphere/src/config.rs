@@ -37,7 +37,9 @@ impl Default for Config {
             service_name: "harnesssphere".to_owned(),
             metric_export_interval_secs: 15,
             ingest_enabled: false,
-            ingest_endpoint: "0.0.0.0:4317".to_owned(),
+            // Default to :4318 so a single instance with both exporter+ingest on defaults
+            // doesn't form a telemetry loop with the :4317 OTLP exporter target.
+            ingest_endpoint: "0.0.0.0:4318".to_owned(),
         }
     }
 }

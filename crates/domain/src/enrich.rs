@@ -21,7 +21,11 @@ impl Enricher {
 
     pub fn enrich(&self, signal: &mut Signal) {
         for (k, v) in &self.attrs {
-            signal.push_attr(k.clone(), v.clone());
+            // Don't duplicate a key the origin already carries (e.g. host.name from the
+            // pushed Resource — the harness is co-located, so it's the same host).
+            if !signal.attributes().iter().any(|(ek, _)| ek == k) {
+                signal.push_attr(k.clone(), v.clone());
+            }
         }
     }
 }
