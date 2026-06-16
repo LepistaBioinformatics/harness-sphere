@@ -1,0 +1,18 @@
+[package]
+name = "harnesssphere-collectors"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+# Coletores Critical (host, self) são sempre compilados. Optional ficam atrás de feature.
+default = []
+container = []
+prometheus = []
+
+[dependencies]
+harnesssphere-domain.workspace = true
+async-trait.workspace = true
+sysinfo.workspace = true
+tracing.workspace = true

@@ -1,0 +1,27 @@
+[package]
+name = "harnesssphere"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+default-run = "harnesssphere"
+
+[[bin]]
+name = "harnesssphere"
+path = "src/main.rs"
+
+[features]
+default = []
+otlp = ["harnesssphere-export/otlp"]
+
+[dependencies]
+harnesssphere-domain.workspace = true
+harnesssphere-runtime.workspace = true
+harnesssphere-collectors.workspace = true
+harnesssphere-export.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde.workspace = true
+toml.workspace = true
+anyhow.workspace = true

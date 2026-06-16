@@ -1,0 +1,16 @@
+[package]
+name = "harnesssphere-export"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[features]
+default = []
+# Adapter OTLP (próximo sprint) — confina as crates `opentelemetry*` (pré-1.0) aqui.
+otlp = []
+
+[dependencies]
+harnesssphere-domain.workspace = true
+async-trait.workspace = true
+tracing.workspace = true

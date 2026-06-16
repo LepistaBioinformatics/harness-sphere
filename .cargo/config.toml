@@ -1,0 +1,19 @@
+# Cross-compilation. Recomendado: `cross` (Linux/musl/ARM) + `cargo-zigbuild` (macOS).
+#
+#   cargo install cross cargo-zigbuild
+#
+#   cross build --release --target x86_64-unknown-linux-musl
+#   cross build --release --target aarch64-unknown-linux-musl
+#   cross build --release --target armv7-unknown-linux-musleabihf      # Raspberry Pi 32-bit
+#   cargo zigbuild --release --target universal2-apple-darwin          # macOS Intel+ARM
+#
+# Linux musl 100% estático (sem deps dinâmicas — roda em qualquer distro / Raspberry Pi).
+
+[target.x86_64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.armv7-unknown-linux-musleabihf]
+rustflags = ["-C", "target-feature=+crt-static"]
