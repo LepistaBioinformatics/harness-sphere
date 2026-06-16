@@ -1,84 +1,85 @@
-# Feature: telemetry-core — Especificação
+# Feature: telemetry-core — Specification
 
-> Núcleo do HarnessSphere: runtime de coleta, modelo de plugins, resiliência e export OTel.
-> IDs rastreáveis para amarrar design → tasks → implementação.
+> HarnessSphere core: collection runtime, plugin model, resilience and OTel export.
+> Traceable IDs to tie design → tasks → implementation.
 
-## Requisitos funcionais
+## Functional requirements
 
-### Arquitetura & extensibilidade
-- **FR-ARCH-01** — Todo coletor implementa o trait `Collector` e vive num módulo
-  isolado (`collectors/<layer>.rs`).
-- **FR-ARCH-02** — Coletores são registrados num `CollectorRegistry`; o core itera o
-  registry sem conhecer concretamente cada coletor.
-- **FR-ARCH-03** — Adicionar um novo coletor **não exige** alterar o core: basta criar
-  o módulo, implementar o trait e registrá-lo (atrás de uma `cargo feature`).
-- **FR-ARCH-04** — Cada coletor declara metadados estáticos: `name`, `layer`,
-  `criticality` (`Critical | Optional`) e `interval`.
+### Architecture & extensibility
+- **FR-ARCH-01** — Every collector implements the `Collector` trait and lives in an
+  isolated module (`collectors/<layer>.rs`).
+- **FR-ARCH-02** — Collectors are registered in a `CollectorRegistry`; the core iterates the
+  registry without concretely knowing each collector.
+- **FR-ARCH-03** — Adding a new collector **does not require** changing the core: just create
+  the module, implement the trait and register it (behind a `cargo feature`).
+- **FR-ARCH-04** — Each collector declares static metadata: `name`, `layer`,
+  `criticality` (`Critical | Optional`) and `interval`.
 
-### Resiliência & graceful degradation
-- **FR-RES-01** — Cada coletor roda numa task `tokio` independente; o scheduler nunca
-  bloqueia um coletor por causa de outro.
-- **FR-RES-02** — Toda coleta retorna `Result`; erro de um coletor é capturado, logado
-  e exportado como métrica de falha, **sem** propagar para o core.
-- **FR-RES-03** — `panic` dentro de um coletor é contido (catch_unwind no nível do
-  tick); não aborta o processo nem outras tasks.
-- **FR-RES-04** — Coletor **Optional** com N falhas consecutivas entra em estado
-  `Degraded` com backoff exponencial e *circuit breaker*; auto-recupera quando o alvo
-  volta.
-- **FR-RES-05** — Coletor **Critical** (Host, Self) com falha persistente acima do
-  threshold faz o processo encerrar com exit code ≠ 0 (fail-fast intencional).
-- **FR-RES-06** — Ausência de um alvo opcional (ex.: container inexistente, gateway
-  fora) é tratada como `NotApplicable`/`Unavailable`, não como erro fatal.
+### Resilience & graceful degradation
+- **FR-RES-01** — Each collector runs in an independent `tokio` task; the scheduler never
+  blocks one collector because of another.
+- **FR-RES-02** — Every collection returns a `Result`; a collector error is captured, logged
+  and exported as a failure metric, **without** propagating to the core.
+- **FR-RES-03** — A `panic` inside a collector is contained (catch_unwind at the tick
+  level); it does not abort the process nor other tasks.
+- **FR-RES-04** — An **Optional** collector with N consecutive failures enters the
+  `Degraded` state with exponential backoff and a *circuit breaker*; it auto-recovers when
+  the target comes back.
+- **FR-RES-05** — A **Critical** collector (Host, Self) with persistent failure above the
+  threshold makes the process exit with a non-zero exit code (intentional fail-fast).
+- **FR-RES-06** — The absence of an optional target (e.g., a non-existent container, a gateway
+  that is down) is treated as `NotApplicable`/`Unavailable`, not as a fatal error.
 
-### Telemetria (OTel)
-- **FR-OTEL-01** — Exporta os três sinais (metrics, logs, traces) via OTLP
-  (gRPC default, HTTP opcional), endpoint/headers configuráveis.
-- **FR-OTEL-02** — Nomes de instrumentos e atributos seguem as *semantic conventions*
-  oficiais; ver matriz em `design.md`.
-- **FR-OTEL-03** — `Resource` global com `service.name=harnesssphere`,
-  `service.version`, `host.*`, e atributos de identidade do host.
-- **FR-OTEL-04** — O próprio watcher é auto-instrumentado (process.\* + métricas de
-  loop/scraping).
+### Telemetry (OTel)
+- **FR-OTEL-01** — Exports the three signals (metrics, logs, traces) via OTLP
+  (gRPC default, HTTP optional), with configurable endpoint/headers.
+- **FR-OTEL-02** — Instrument and attribute names follow the official *semantic conventions*;
+  see the matrix in `design.md`.
+- **FR-OTEL-03** — Global `Resource` with `service.name=harnesssphere`,
+  `service.version`, `host.*`, and host identity attributes.
+- **FR-OTEL-04** — The watcher itself is self-instrumented (process.\* + loop/scraping
+  metrics).
 
-### Configuração & distribuição
-- **FR-CFG-01** — Configuração via arquivo (TOML) + env vars (override), incluindo quais
-  coletores habilitar, intervalos e endpoint OTLP.
-- **FR-DIST-01** — Build produz um único binário estático por target (musl/macOS/ARM).
+### Configuration & distribution
+- **FR-CFG-01** — Configuration via file (TOML) + env vars (override), including which
+  collectors to enable, intervals and OTLP endpoint.
+- **FR-DIST-01** — The build produces a single static binary per target (musl/macOS/ARM).
 
-## Requisitos não-funcionais
-- **NFR-01** — Footprint baixo: o watcher não deve ser fonte material de carga
-  (orçamento-alvo: < ~1% CPU médio, < ~30 MB RSS em estado estacionário; medido por ele
-  mesmo via FR-OTEL-04).
-- **NFR-02** — Binário enxuto (LTO + `opt-level="z"` + strip) e sem dependências
-  dinâmicas no target Linux (musl 100% estático).
-- **NFR-03** — Zero crash por causa de alvo monitorado (consequência de FR-RES-\*).
-- **NFR-04** — Overhead de export resiliente: falha do endpoint OTLP não bloqueia
-  coleta (export assíncrono com buffer/drop bounded).
+## Non-functional requirements
+- **NFR-01** — Low footprint: the watcher must not be a material source of load
+  (target budget: < ~1% average CPU, < ~30 MB RSS in steady state; measured by itself
+  via FR-OTEL-04).
+- **NFR-02** — Lean binary (LTO + `opt-level="z"` + strip) and no dynamic dependencies
+  on the Linux target (100% static musl).
+- **NFR-03** — Zero crashes caused by a monitored target (consequence of FR-RES-\*).
+- **NFR-04** — Resilient export overhead: an OTLP endpoint failure does not block
+  collection (asynchronous export with bounded buffer/drop).
 
-## Gray areas (a decidir com o usuário antes de TASKS)
-- **GA-01** — Identidade exata dos alvos "Gateway" e "Harness": expõem `/metrics`
-  (Prometheus), OTLP próprio, logs em arquivo, ou socket/admin API? Define o modo de
-  scraping.
-- **GA-02** — "Container que roda o harness": runtime é Docker/containerd/podman? Lemos
-  cgroup v2 diretamente (preferido, sem socket) ou via API do runtime?
-- **GA-03** — Origem dos sinais de IA (tokens/mensagens/search index/memory files):
-  o harness já emite OTLP/Prometheus, ou precisamos derivar de logs/arquivos no host?
-- **GA-04** — Sandbox de tools: o tempo/contagem por tool vem de instrumentação do
-  harness ou o watcher observa processos/execução externamente?
-- **GA-05** — Política de privacidade de conteúdo GenAI (prompts/completions): por
-  padrão **não** capturar conteúdo (só métricas/contadores), opt-in explícito.
+## Gray areas (to decide with the user before TASKS)
+- **GA-01** — Exact identity of the "Gateway" and "Harness" targets: do they expose `/metrics`
+  (Prometheus), their own OTLP, file logs, or a socket/admin API? Defines the scraping
+  mode.
+- **GA-02** — "Container running the harness": is the runtime Docker/containerd/podman? Do we
+  read cgroup v2 directly (preferred, no socket) or via the runtime API?
+- **GA-03** — Source of the AI signals (tokens/messages/search index/memory files):
+  does the harness already emit OTLP/Prometheus, or do we need to derive them from logs/files
+  on the host?
+- **GA-04** — Tools sandbox: does the time/count per tool come from harness instrumentation
+  or does the watcher observe processes/execution externally?
+- **GA-05** — GenAI content privacy policy (prompts/completions): by default **do not**
+  capture content (metrics/counters only), explicit opt-in.
 
-## Decisões registradas (ver context.md)
-- **Escopo = Opção A** (sidecar collector unificado: receiver OTLP + scrape + host/self/
-  container + enrich + export). Adiciona requisitos:
-  - **FR-INGEST-01** — Receiver OTLP local (gRPC :4317 / HTTP :4318) que aceita push de
-    OpenClaw/Hermes; criticidade Optional.
-  - **FR-INGEST-02** — Enricher injeta `host.*`/`container.id` em todo sinal ingerido e
-    normaliza dupla convenção (OpenInference `llm.token_count.*` → `gen_ai.*`).
-  - **FR-INGEST-03** — Proteção anti-loop: o exporter do próprio HarnessSphere nunca
-    realimenta seu próprio receiver.
-- **GA-05 = opt-in explícito por camada.** Enricher **redige conteúdo por padrão**
-  (FR-PRIV-01), mesmo em passthrough; só emite texto com flag de config explícita.
-- **Crash crítico = falha persistente acima de threshold** (não primeiro erro).
+## Recorded decisions (see context.md)
+- **Scope = Option A** (unified sidecar collector: OTLP receiver + scrape + host/self/
+  container + enrich + export). Adds requirements:
+  - **FR-INGEST-01** — Local OTLP receiver (gRPC :4317 / HTTP :4318) that accepts pushes from
+    OpenClaw/Hermes; Optional criticality.
+  - **FR-INGEST-02** — Enricher injects `host.*`/`container.id` into every ingested signal and
+    normalizes the dual convention (OpenInference `llm.token_count.*` → `gen_ai.*`).
+  - **FR-INGEST-03** — Anti-loop protection: HarnessSphere's own exporter never
+    feeds back into its own receiver.
+- **GA-05 = explicit opt-in per layer.** The Enricher **redacts content by default**
+  (FR-PRIV-01), even in passthrough; it only emits text with an explicit config flag.
+- **Critical crash = persistent failure above threshold** (not the first error).
 
-> Gray areas resolvidas registradas em `context.md`.
+> Resolved gray areas recorded in `context.md`.

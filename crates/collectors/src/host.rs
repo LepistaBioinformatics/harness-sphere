@@ -1,5 +1,5 @@
-//! Coletor Host (Critical) — CPU, memória e swap via `sysinfo`.
-//! Mapeia para semantic conventions `system.*`.
+//! Host collector (Critical) — CPU, memory and swap via `sysinfo`.
+//! Maps to the `system.*` semantic conventions.
 
 use async_trait::async_trait;
 use harnesssphere_domain::{
@@ -35,10 +35,10 @@ impl SignalSource for HostCollector {
     }
 
     async fn probe(&mut self) -> ProbeResult {
-        // O host está sempre presente; se nem isto refresca, é fatal (Critical).
+        // The host is always present; if even this won't refresh, it's fatal (Critical).
         self.sys.refresh_memory();
         if self.sys.total_memory() == 0 {
-            ProbeResult::Fatal("não foi possível ler memória do host".into())
+            ProbeResult::Fatal("could not read host memory".into())
         } else {
             ProbeResult::Ready
         }
@@ -48,8 +48,8 @@ impl SignalSource for HostCollector {
         self.sys.refresh_cpu_all();
         self.sys.refresh_memory();
 
-        // sysinfo só dá utilização agregada (sem breakdown user/system/idle), então
-        // emitimos sem `system.cpu.state` em vez de inventar um valor fora da semconv.
+        // sysinfo only gives aggregate utilization (no user/system/idle breakdown), so
+        // we emit without `system.cpu.state` instead of inventing a value outside the semconv.
         let cpu_frac = (self.sys.global_cpu_usage() as f64) / 100.0;
         sink.emit(Metric::now("system.cpu.utilization", MetricKind::Gauge, cpu_frac).into_signal());
 

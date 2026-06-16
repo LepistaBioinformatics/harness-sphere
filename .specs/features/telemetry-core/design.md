@@ -1,32 +1,32 @@
 # Feature: telemetry-core — Design
 
-> Arquitetura modular, modelo de resiliência, matriz de mapeamento OpenTelemetry e
-> estratégia de cross-compilation. Versões verificadas (jun/2026): `opentelemetry 0.32`.
-> Semantic conventions citadas conferidas contra a spec oficial (system.\*, process.\*,
+> Modular architecture, resilience model, OpenTelemetry mapping matrix and
+> cross-compilation strategy. Verified versions (Jun/2026): `opentelemetry 0.32`.
+> Cited semantic conventions checked against the official spec (system.\*, process.\*,
 > container.\*, http.\*, rpc.\*, gen_ai.\*).
 
 ---
 
-## 1. Arquitetura Modular & Extensibilidade (Ports & Adapters)
+## 1. Modular Architecture & Extensibility (Ports & Adapters)
 
-A arquitetura é **hexagonal (ports & adapters)**, aplicada com disciplina (não dogma):
+The architecture is **hexagonal (ports & adapters)**, applied with discipline (not dogma):
 
-- **Domínio (hexágono):** modelo de sinal **canônico** (`Metric`/`LogRecord`/`Span`),
-  **ports** (traits) e **políticas** puras — criticality/crash, circuit breaker,
-  enriquecimento, normalização (dupla convenção Hermes → `gen_ai.*`), redação. **Sem
-  dependência de IO nem do SDK OpenTelemetry.**
-- **Driving adapters** (iniciam o fluxo p/ dentro): `OtlpReceiver` (push de OpenClaw/
-  Hermes) e o supervisor/scheduler que dispara os pulls.
-- **Driven adapters** (chamados pelo domínio): fontes (`sysinfo`, `cgroup`,
-  `prometheus-scrape`) e sinks (`otlp-exporter`, `stdout-exporter`).
+- **Domain (the hexagon):** **canonical** signal model (`Metric`/`LogRecord`/`Span`),
+  **ports** (traits) and pure **policies** — criticality/crash, circuit breaker,
+  enrichment, normalization (Hermes dual convention → `gen_ai.*`), redaction. **No
+  dependency on IO nor on the OpenTelemetry SDK.**
+- **Driving adapters** (start the flow inward): `OtlpReceiver` (push from OpenClaw/
+  Hermes) and the supervisor/scheduler that triggers the pulls.
+- **Driven adapters** (called by the domain): sources (`sysinfo`, `cgroup`,
+  `prometheus-scrape`) and sinks (`otlp-exporter`, `stdout-exporter`).
 
-> **Por que hexagonal aqui (não especulativo):** (1) há IO plural nos dois lados;
-> (2) o domínio tem lógica pura testável sem rede; (3) as crates `opentelemetry*` estão
-> **pré-1.0 (0.32)** e quebram API com frequência — confinar o SDK no adapter de export
-> protege o core. Guardrail: adapters de fonte são finos, **um** enum de sinal canônico
-> (sem DTO por métrica), port só onde há >1 implementação real.
+> **Why hexagonal here (not speculative):** (1) there is plural IO on both sides;
+> (2) the domain has pure logic that is testable without a network; (3) the `opentelemetry*`
+> crates are **pre-1.0 (0.32)** and break the API frequently — confining the SDK in the
+> export adapter protects the core. Guardrail: source adapters are thin, **one** canonical
+> signal enum (no per-metric DTO), a port only where there is >1 real implementation.
 
-### 1.1 Visão em camadas
+### 1.1 Layered view
 
 ```
                        ┌──────────────────────────────────────────┐
@@ -45,31 +45,31 @@ A arquitetura é **hexagonal (ports & adapters)**, aplicada com disciplina (não
                        └───────────────────┴────────────────────┘  │
                                 ▲           ▲          ▲
         ┌───────────────────────┼───────────┼──────────┼───────────────────────┐
-        │   collectors/ (cada camada = módulo isolado, atrás de cargo feature)  │
+        │   collectors/ (each layer = isolated module, behind a cargo feature)  │
         │  host*  self*  container  gateway  harness  tools  api                │
-        │  (* = Critical; demais = Optional)                                    │
+        │  (* = Critical; others = Optional)                                    │
         └──────────────────────────────────────────────────────────────────────┘
 ```
 
-O **core não conhece** nenhum coletor concreto. Conhece apenas o trait `Collector` e o
-`Registry`. Cada camada é um módulo em `collectors/` compilado condicionalmente por
+The **core does not know** any concrete collector. It only knows the `Collector` trait and
+the `Registry`. Each layer is a module in `collectors/` compiled conditionally by
 `cargo feature`.
 
-### 1.2 Trait central
+### 1.2 Central trait
 
 ```rust
-/// Contrato único que todo coletor implementa. Object-safe (usado como `dyn Collector`).
+/// The single contract every collector implements. Object-safe (used as `dyn Collector`).
 #[async_trait::async_trait]
 pub trait Collector: Send + Sync + 'static {
-    /// Metadados estáticos do coletor (nome, camada, criticidade, intervalo).
+    /// Static metadata of the collector (name, layer, criticality, interval).
     fn descriptor(&self) -> &CollectorDescriptor;
 
-    /// Chamado uma vez no boot. Detecta disponibilidade do alvo.
-    /// `Unavailable`/`NotApplicable` para Optional NÃO é erro fatal.
+    /// Called once at boot. Detects target availability.
+    /// `Unavailable`/`NotApplicable` for an Optional is NOT a fatal error.
     async fn probe(&mut self, cx: &CollectorCtx) -> ProbeResult;
 
-    /// Um ciclo de coleta. Emite sinais via `cx.emitter`. Retorna Result —
-    /// erro é isolado pelo runtime, nunca propaga para o core.
+    /// One collection cycle. Emits signals via `cx.emitter`. Returns Result —
+    /// an error is isolated by the runtime, it never propagates to the core.
     async fn collect(&mut self, cx: &CollectorCtx) -> Result<(), CollectError>;
 }
 
@@ -83,26 +83,26 @@ pub struct CollectorDescriptor {
 pub enum Criticality { Critical, Optional }
 
 pub enum ProbeResult {
-    Ready,                 // alvo presente, coleta habilitada
-    Unavailable(String),   // alvo ausente/sem resposta (Optional → degrade, não falha)
-    NotApplicable,         // não faz sentido neste host (ex.: sem container)
-    Fatal(String),         // só Critical pode retornar isto → aborta boot
+    Ready,                 // target present, collection enabled
+    Unavailable(String),   // target absent/unresponsive (Optional → degrade, not failure)
+    NotApplicable,         // makes no sense on this host (e.g., no container)
+    Fatal(String),         // only Critical can return this → aborts boot
 }
 ```
 
-`Collector` **é o port `SignalSource`** (driven). `CollectorCtx` carrega config do
-coletor e um `SignalSink` (canal para o pipeline do domínio). O coletor "fala" só em
-**sinais canônicos do domínio**; o adapter de export (`export/`) é o único que traduz
-para OTLP. Assim o SDK pré-1.0 nunca toca o core.
+`Collector` **is the `SignalSource` port** (driven). `CollectorCtx` carries the collector's
+config and a `SignalSink` (channel into the domain pipeline). The collector "speaks" only in
+**canonical domain signals**; the export adapter (`export/`) is the only one that translates
+to OTLP. This way the pre-1.0 SDK never touches the core.
 
-### 1.3 Registro e extensibilidade (adicionar coletor sem tocar no core)
+### 1.3 Registration and extensibility (adding a collector without touching the core)
 
 ```rust
-// composition root (crate `harnesssphere`, bin) — wiring de ports↔adapters
+// composition root (crate `harnesssphere`, bin) — wiring of ports↔adapters
 pub fn build_registry(cfg: &Config) -> CollectorRegistry {
     let mut reg = CollectorRegistry::new();
-    reg.register(Box::new(HostCollector::new(&cfg.host)));   // sempre (Critical)
-    reg.register(Box::new(SelfCollector::new()));            // sempre (Critical)
+    reg.register(Box::new(HostCollector::new(&cfg.host)));   // always (Critical)
+    reg.register(Box::new(SelfCollector::new()));            // always (Critical)
 
     #[cfg(feature = "container")]
     reg.register(Box::new(ContainerCollector::new(&cfg.container)));
@@ -119,67 +119,67 @@ pub fn build_registry(cfg: &Config) -> CollectorRegistry {
 }
 ```
 
-**Para adicionar um coletor novo (ex.: um novo gateway):**
-1. Cria `collectors/gateway_envoy.rs` implementando `Collector`.
-2. Adiciona a `cargo feature` no `Cargo.toml`.
-3. Uma linha `reg.register(...)` atrás de `#[cfg(feature = ...)]`.
+**To add a new collector (e.g., a new gateway):**
+1. Create `collectors/gateway_envoy.rs` implementing `Collector`.
+2. Add the `cargo feature` in `Cargo.toml`.
+3. One line `reg.register(...)` behind `#[cfg(feature = ...)]`.
 
-O domínio + runtime + adapter de export **não mudam**. O binário não
-quebra: features desligadas nem compilam o módulo → zero custo. Esse é o ponto de
-extensão único e estável.
+The domain + runtime + export adapter **do not change**. The binary does not
+break: disabled features do not even compile the module → zero cost. This is the single,
+stable extension point.
 
-> **Decisão de design:** dynamic dispatch (`Box<dyn Collector>`) em vez de enum estático.
-> O custo de vtable é irrelevante na escala de coleta (intervalos de segundos) e ganhamos
-> extensibilidade aberta. Plugins *dinâmicos* (`.so`/`dlopen`) são **não-objetivo da v1**
-> (ABI instável em Rust); a extensão é em compile-time via features.
+> **Design decision:** dynamic dispatch (`Box<dyn Collector>`) instead of a static enum.
+> The vtable cost is irrelevant at the collection scale (intervals of seconds) and we gain
+> open extensibility. *Dynamic* plugins (`.so`/`dlopen`) are a **v1 non-goal**
+> (unstable ABI in Rust); the extension is at compile-time via features.
 
-### 1.4 Layout do workspace (hexagonal, sem prefixo `hs`)
+### 1.4 Workspace layout (hexagonal, no `hs` prefix)
 
 ```
 harness-sphere/
 ├─ Cargo.toml                # [workspace]
-├─ .cargo/config.toml        # targets, linkers cross
+├─ .cargo/config.toml        # targets, cross linkers
 ├─ crates/
-│  ├─ domain/                # pkg harnesssphere-domain — DOMÍNIO: modelo de sinal
-│  │                         #   canônico, ports (SignalSource/Receiver/Exporter/Probe),
-│  │                         #   políticas (criticality, breaker, enrich, normalize,
+│  ├─ domain/                # pkg harnesssphere-domain — DOMAIN: canonical signal
+│  │                         #   model, ports (SignalSource/Receiver/Exporter/Probe),
+│  │                         #   policies (criticality, breaker, enrich, normalize,
 │  │                         #   redact). ZERO IO, ZERO otel.
-│  ├─ runtime/               # pkg harnesssphere-runtime — supervisor/scheduler que
-│  │                         #   orquestra os ports (driving)
-│  ├─ collectors/            # pkg harnesssphere-collectors — driven adapters de fonte:
+│  ├─ runtime/               # pkg harnesssphere-runtime — supervisor/scheduler that
+│  │                         #   orchestrates the ports (driving)
+│  ├─ collectors/            # pkg harnesssphere-collectors — driven source adapters:
 │  │                         #   host, self (Critical) | container, prometheus (feature)
-│  ├─ ingest/                # pkg harnesssphere-ingest — driving adapter: receiver OTLP
-│  │                         #   + guarda anti-loop
-│  └─ export/                # pkg harnesssphere-export — driven adapter: exporter OTLP +
-│                            #   init do SDK + Resource (único lugar com `opentelemetry*`)
+│  ├─ ingest/                # pkg harnesssphere-ingest — driving adapter: OTLP receiver
+│  │                         #   + anti-loop guard
+│  └─ export/                # pkg harnesssphere-export — driven adapter: OTLP exporter +
+│                            #   SDK init + Resource (only place with `opentelemetry*`)
 ├─ harnesssphere/            # pkg harnesssphere (bin) — composition root: config → wiring
 └─ .specs/
 ```
 
-Nomes de pacote `harnesssphere-*` (evita colisão em crates.io); diretórios curtos por
-papel. O domínio é a única crate sem dependências de IO/OTel — é onde mora a lógica
-testável.
+Package names `harnesssphere-*` (avoids collision on crates.io); short directories by
+role. The domain is the only crate with no IO/OTel dependencies — it is where the testable
+logic lives.
 
-### 1.5 Plano PULL (scrape) vs plano PUSH (ingest) — refinamento pós-pesquisa
+### 1.5 PULL plane (scrape) vs PUSH plane (ingest) — post-research refinement
 
-A pesquisa na doc do ecossistema (ver `context.md`) revelou que os componentes de IA
-**empurram OTLP** e **não** expõem traces para scraping:
+Research into the ecosystem documentation (see `context.md`) revealed that the AI components
+**push OTLP** and do **not** expose traces for scraping:
 
-- **OpenClaw** → PUSH OTLP (default `:4318`) **+** Prometheus scrape em
+- **OpenClaw** → PUSH OTLP (default `:4318`) **+** Prometheus scrape at
   `/api/diagnostics/prometheus`.
-- **Hermes** (`hermes-otel`) → PUSH OTLP (BatchSpanProcessor), atributos em dupla
-  convenção (`gen_ai.*` e OpenInference `llm.token_count.*`).
-- **PicoClaw** → leve (Go, <10MB); exposição nativa não confirmada (provável ClawMetry/
-  logs). Tratado como Optional com fallback.
+- **Hermes** (`hermes-otel`) → PUSH OTLP (BatchSpanProcessor), attributes in dual
+  convention (`gen_ai.*` and OpenInference `llm.token_count.*`).
+- **PicoClaw** → lightweight (Go, <10MB); native exposure not confirmed (likely ClawMetry/
+  logs). Treated as Optional with fallback.
 
-Logo o trait `Collector` (pull) não cobre o tráfego push. Introduzimos um segundo
-contrato e o pipeline estilo OTel Collector:
+Therefore the `Collector` trait (pull) does not cover push traffic. We introduce a second
+contract and an OTel Collector-style pipeline:
 
 ```rust
-/// Plano PUSH: recebe OTLP que os componentes empurram, enriquece e re-exporta.
+/// PUSH plane: receives OTLP that the components push, enriches and re-exports.
 #[async_trait::async_trait]
 pub trait Receiver: Send + Sync + 'static {
-    fn descriptor(&self) -> &ReceiverDescriptor;          // criticidade SEMPRE Optional
+    fn descriptor(&self) -> &ReceiverDescriptor;          // criticality ALWAYS Optional
     async fn serve(&mut self, cx: &ReceiverCtx, tx: SignalSink) -> Result<(), RecvError>;
 }
 ```
@@ -189,38 +189,38 @@ pub trait Receiver: Send + Sync + 'static {
                                    │ OtlpReceiver   │┐
                                    └───────────────┘│   ┌──────────────┐    ┌──────────┐
    PULL  Host/Self/Container ────▶ ┌───────────────┐├──▶│  Enricher    │──▶ │ Exporter │─OTLP▶ backend
-         OpenClaw /prometheus ───▶ │ Collectors     │┘   │ +host/cont.  │    │ (1 saída)│
+         OpenClaw /prometheus ───▶ │ Collectors     │┘   │ +host/cont.  │    │ 1 output │
                                    └───────────────┘    │ +normalize   │    └──────────┘
                                                         └──────────────┘
 ```
 
-O **Enricher** injeta `host.*`/`container.id` em todo sinal que entra pelo receiver e
-**normaliza** a dupla convenção do Hermes (`llm.token_count.prompt` →
-`gen_ai.usage.input_tokens`). Esse é o **diferencial**: correlacionar spans `gen_ai.*`
-com pressão de recurso do mesmo host.
+The **Enricher** injects `host.*`/`container.id` into every signal that enters through the
+receiver and **normalizes** Hermes's dual convention (`llm.token_count.prompt` →
+`gen_ai.usage.input_tokens`). This is the **differentiator**: correlating `gen_ai.*` spans
+with resource pressure from the same host.
 
-> **FORK DE ESCOPO — DECIDIDO: Opção A.** ✅
+> **SCOPE FORK — DECIDED: Option A.** ✅
 >
-> **Opção A — Sidecar collector unificado (ESCOLHIDA):** embute o
-> `OtlpReceiver` + scrape Prometheus + coletores de host/cgroup/self + enrich + 1
-> exporter OTLP. Um binário substitui "OTel Collector + node exporter". A telemetria de
-> IA *passa pelo* HarnessSphere e ganha contexto de host. Escopo maior (roda um servidor
-> OTLP local; cuidado com loops de telemetria).
+> **Option A — Unified sidecar collector (CHOSEN):** embeds the
+> `OtlpReceiver` + Prometheus scrape + host/cgroup/self collectors + enrich + 1
+> OTLP exporter. A single binary replaces "OTel Collector + node exporter". The AI
+> telemetry *passes through* HarnessSphere and gains host context. Larger scope (runs a local
+> OTLP server; mind telemetry loops).
 >
-> **Opção B — Agente de host focado:** só PULL (host/self/container + scrape Prometheus)
-> exporta OTLP; os componentes de IA empurram direto para um Collector externo. Binário
-> menor e mais simples, mas o "painel único" enfraquece — a telemetria de IA **não**
-> é enriquecida com contexto de host pelo HarnessSphere.
+> **Option B — Focused host agent:** only PULL (host/self/container + Prometheus scrape)
+> exports OTLP; the AI components push directly to an external Collector. A smaller and
+> simpler binary, but the "single pane" weakens — the AI telemetry is **not**
+> enriched with host context by HarnessSphere.
 
 ---
 
-## 2. Resiliência & Fallback (Graceful Degradation)
+## 2. Resilience & Fallback (Graceful Degradation)
 
-### 2.1 Supervisor + isolamento por task
+### 2.1 Supervisor + per-task isolation
 
-O `CollectionRuntime` é um supervisor: cada coletor roda numa **task tokio própria** com
-seu próprio `tokio::time::interval`. Não há um loop monolítico — assim um coletor lento ou
-travado nunca atrasa os outros (FR-RES-01).
+The `CollectionRuntime` is a supervisor: each collector runs in its **own tokio task** with
+its own `tokio::time::interval`. There is no monolithic loop — so a slow or stuck collector
+never delays the others (FR-RES-01).
 
 ```rust
 async fn supervise(mut collector: Box<dyn Collector>, cx: CollectorCtx, ctl: SupervisorCtl) {
@@ -228,19 +228,19 @@ async fn supervise(mut collector: Box<dyn Collector>, cx: CollectorCtx, ctl: Sup
     let mut breaker = CircuitBreaker::new(desc.criticality);
     let mut ticker = tokio::time::interval(cx.config.interval(&desc));
 
-    // probe inicial
+    // initial probe
     match collector.probe(&cx).await {
-        ProbeResult::Fatal(e) => return ctl.report_fatal(&desc, e),   // só Critical chega aqui
+        ProbeResult::Fatal(e) => return ctl.report_fatal(&desc, e),   // only Critical reaches here
         ProbeResult::Unavailable(_) | ProbeResult::NotApplicable => breaker.trip_open(),
         ProbeResult::Ready => {}
     }
 
     loop {
         ticker.tick().await;
-        if breaker.is_open() { /* backoff: re-probe esporádico */ ... continue; }
+        if breaker.is_open() { /* backoff: sporadic re-probe */ ... continue; }
 
         let started = Instant::now();
-        // FR-RES-03: panic dentro do tick é CONTIDO, não derruba a task nem o processo.
+        // FR-RES-03: a panic inside the tick is CONTAINED, it does not bring down the task nor the process.
         let outcome = AssertUnwindSafe(collector.collect(&cx)).catch_unwind().await;
 
         match outcome {
@@ -252,23 +252,23 @@ async fn supervise(mut collector: Box<dyn Collector>, cx: CollectorCtx, ctl: Sup
 }
 ```
 
-Três camadas de contenção:
-1. **`Result`** — erro esperado (timeout, conexão recusada, parse). → `handle_failure`.
-2. **`catch_unwind`** (via `futures::FutureExt`) — `panic` inesperado vira `Err`, contido
-   no tick. A task sobrevive. (FR-RES-03)
-3. **Task isolada** — se a própria task morrer, o `JoinHandle` é observado pelo supervisor,
-   que a re-spawna (para Optional) ou escala para fatal (para Critical).
+Three containment layers:
+1. **`Result`** — expected error (timeout, connection refused, parse). → `handle_failure`.
+2. **`catch_unwind`** (via `futures::FutureExt`) — an unexpected `panic` becomes `Err`,
+   contained in the tick. The task survives. (FR-RES-03)
+3. **Isolated task** — if the task itself dies, the `JoinHandle` is observed by the supervisor,
+   which re-spawns it (for Optional) or escalates to fatal (for Critical).
 
-### 2.2 Circuit breaker + criticidade
+### 2.2 Circuit breaker + criticality
 
 ```rust
 fn handle_failure(desc, breaker, ctl, cx, err) {
-    cx.emit_scrape_failure(desc, &err);          // métrica + log (ver matriz §3.2)
-    breaker.record_failure();                     // backoff exponencial
+    cx.emit_scrape_failure(desc, &err);          // metric + log (see matrix §3.2)
+    breaker.record_failure();                     // exponential backoff
     match (desc.criticality, breaker.state()) {
-        // Optional: degrada e segue. Auto-recupera quando o alvo volta.
+        // Optional: degrade and continue. Auto-recovers when the target comes back.
         (Criticality::Optional, _) => tracing::warn!(collector=desc.name, %err, "degraded"),
-        // Critical: tolera transitório, mas falha persistente é FATAL (fail-fast).
+        // Critical: tolerates a transient, but persistent failure is FATAL (fail-fast).
         (Criticality::Critical, BreakerState::Open) if breaker.consecutive() >= THRESHOLD =>
             ctl.report_fatal(desc, format!("critical collector down: {err}")),
         (Criticality::Critical, _) =>
@@ -279,253 +279,253 @@ fn handle_failure(desc, breaker, ctl, cx, err) {
 
 | | **Critical** (Host, Self) | **Optional** (container, gateway, harness, tools, api) |
 |---|---|---|
-| Alvo ausente no boot | `Fatal` → exit ≠ 0 | `Unavailable`/`NotApplicable` → breaker aberto, segue |
-| Erro transitório | loga `error`, continua | loga `warn`, conta falha |
-| Falha persistente (> THRESHOLD) | **processo encerra (exit ≠ 0)** | `Degraded` + backoff, re-probe, **nunca** mata o processo |
-| Recuperação | — | breaker fecha sozinho quando alvo responde |
+| Target absent at boot | `Fatal` → exit ≠ 0 | `Unavailable`/`NotApplicable` → breaker open, continue |
+| Transient error | logs `error`, continues | logs `warn`, counts failure |
+| Persistent failure (> THRESHOLD) | **process exits (exit ≠ 0)** | `Degraded` + backoff, re-probe, **never** kills the process |
+| Recovery | — | breaker closes by itself when the target responds |
 
-`ctl.report_fatal` sinaliza o core para shutdown ordenado: flush do exporter OTLP →
-exit com código ≠ 0. Assim mesmo um crash crítico **exporta o motivo** antes de morrer.
+`ctl.report_fatal` signals the core for an ordered shutdown: flush the OTLP exporter →
+exit with a non-zero code. This way even a critical crash **exports the reason** before dying.
 
-### 2.3 Export resiliente (NFR-04)
+### 2.3 Resilient export (NFR-04)
 
-O export OTLP roda fora do caminho de coleta (batch + canal bounded). Endpoint OTLP
-indisponível **não** bloqueia coleta: buffer limitado e métrica self de itens
-descartados. Falha de rede do backend ≠ falha de coletor.
+OTLP export runs off the collection path (batch + bounded channel). An unavailable OTLP
+endpoint does **not** block collection: a bounded buffer and a self metric of dropped
+items. A backend network failure ≠ a collector failure.
 
-> **Estado da implementação (sprint 1):** o `ChannelSink` descarta o sinal **mais novo**
-> (drop-newest) quando o canal enche — `tokio::mpsc` não permite pop da frente; drop-oldest
-> exigiria outra estrutura e fica como melhoria. Contagem de descarte já é exposta
-> (`harnesssphere.export.items.dropped` †).
+> **Implementation status (sprint 1):** the `ChannelSink` drops the **newest** signal
+> (drop-newest) when the channel fills up — `tokio::mpsc` does not allow popping from the
+> front; drop-oldest would require a different structure and remains an improvement. The drop
+> count is already exposed (`harnesssphere.export.items.dropped` †).
 
 ---
 
-## 3. Matriz de Mapeamento OpenTelemetry
+## 3. OpenTelemetry Mapping Matrix
 
-Convenções: `M` = Metric, `L` = Log, `T` = Trace/Span. Instrumentos: **G**auge
-(observable), **C**ounter, **UDC** (UpDownCounter), **H**istogram. Nomes seguem semantic
-conventions oficiais; itens fora da spec usam namespace próprio `harnesssphere.*` e estão
-marcados com †.
+Conventions: `M` = Metric, `L` = Log, `T` = Trace/Span. Instruments: **G**auge
+(observable), **C**ounter, **UDC** (UpDownCounter), **H**istogram. Names follow the official
+semantic conventions; items outside the spec use their own `harnesssphere.*` namespace and are
+marked with †.
 
-### Resource (global, anexado a todo sinal)
+### Resource (global, attached to every signal)
 `service.name=harnesssphere`, `service.version`, `service.instance.id`,
 `host.name`, `host.id`, `host.arch`, `os.type`.
 
-### 3.a Host  — **CRÍTICO**
+### 3.a Host  — **CRITICAL**
 
-| Sinal | Nome | Tipo | Atributos / notas |
+| Signal | Name | Type | Attributes / notes |
 |---|---|---|---|
 | M | `system.cpu.utilization` | G (0..1) | `cpu`, `system.cpu.logical_number`, `system.cpu.state` (user/system/idle/iowait) |
-| M | `system.cpu.time` | C (s) | mesmos atributos de state (alternativa cumulativa) |
+| M | `system.cpu.time` | C (s) | same state attributes (cumulative alternative) |
 | M | `system.memory.usage` | UDC (By) | `system.memory.state` (used/free/cached/buffered) |
-| M | `system.memory.utilization` | G (0..1) | idem |
+| M | `system.memory.utilization` | G (0..1) | same |
 | M | `system.paging.usage` / `system.paging.utilization` | UDC/G | swap |
 | M | `system.disk.io` | C (By) | `system.device`, `disk.io.direction` (read/write) |
 | M | `system.disk.operations` | C | `system.device`, direction |
 | M | `system.disk.io_time` | C (s) | `system.device` |
 | M | `system.filesystem.usage` | UDC (By) | `system.device`, `system.filesystem.state` (used/free/reserved), `mountpoint` |
-| M | `system.filesystem.utilization` | G (0..1) | idem |
+| M | `system.filesystem.utilization` | G (0..1) | same |
 | M | `system.network.io` | C (By) | `network.interface.name`, `network.io.direction` |
 | M | `system.network.packet.count` / `system.network.packet.dropped` / `system.network.errors` | C | interface, direction |
 | M | `system.network.connection.count` | UDC | `network.transport`, `system.network.state` |
-| L | evento de saúde do host | L | thresholds (disco cheio, OOM iminente) como log estruturado WARN/ERROR |
-| T | — | — | **N/A** — host é não-transacional; não há span. |
+| L | host health event | L | thresholds (disk full, imminent OOM) as structured WARN/ERROR log |
+| T | — | — | **N/A** — the host is non-transactional; there is no span. |
 
-### 3.b Watcher (HarnessSphere — self) — **CRÍTICO**
+### 3.b Watcher (HarnessSphere — self) — **CRITICAL**
 
-Auto-observabilidade. Usa `process.*` (semconv) + namespace próprio `harnesssphere.*`.
+Self-observability. Uses `process.*` (semconv) + its own `harnesssphere.*` namespace.
 
-| Sinal | Nome | Tipo | Atributos / notas |
+| Signal | Name | Type | Attributes / notes |
 |---|---|---|---|
 | M | `process.cpu.utilization` / `process.cpu.time` | G / C | `process.cpu.state` |
 | M | `process.memory.usage` (RSS) / `process.memory.virtual` | UDC (By) | — |
 | M | `process.thread.count` | UDC | — |
 | M | `process.open_file_descriptors` | UDC | (Linux) |
-| M | `harnesssphere.collector.scrape.duration` † | H (s) | `collector.name`, `collector.layer` — tempo de um `collect()` |
-| M | `harnesssphere.collection.loop.duration` † | H (s) | duração do ciclo agregado de coleta |
+| M | `harnesssphere.collector.scrape.duration` † | H (s) | `collector.name`, `collector.layer` — duration of one `collect()` |
+| M | `harnesssphere.collection.loop.duration` † | H (s) | duration of the aggregated collection cycle |
 | M | `harnesssphere.collector.scrapes` † | C | `collector.name`, `outcome` (success/error/panic) |
 | M | `harnesssphere.collector.state` † | G (enum) | `collector.name` → 0=ready 1=degraded 2=unavailable |
-| M | `harnesssphere.export.items.dropped` † | C | `signal` (metric/log/trace) — backpressure do OTLP |
-| L | falha de scraping | L (WARN/ERROR) | `collector.name`, `error.type`, `error.message`, `exception.stacktrace` (se panic) |
-| L | transição de estado | L (INFO) | breaker open/close, probe result |
-| T | `harnesssphere.collection.cycle` † | T (span) | span-pai por ciclo; cada coletor = child span com `collector.name` e status (Ok/Error) |
+| M | `harnesssphere.export.items.dropped` † | C | `signal` (metric/log/trace) — OTLP backpressure |
+| L | scraping failure | L (WARN/ERROR) | `collector.name`, `error.type`, `error.message`, `exception.stacktrace` (if panic) |
+| L | state transition | L (INFO) | breaker open/close, probe result |
+| T | `harnesssphere.collection.cycle` † | T (span) | parent span per cycle; each collector = child span with `collector.name` and status (Ok/Error) |
 
-### 3.c Container (se existir) — **OPCIONAL**
+### 3.c Container (if it exists) — **OPTIONAL**
 
-Lê **cgroup v2** diretamente (sem socket de runtime). Namespace `container.*` (semconv).
+Reads **cgroup v2** directly (no runtime socket). `container.*` namespace (semconv).
 
-| Sinal | Nome | Tipo | Atributos / notas |
+| Signal | Name | Type | Attributes / notes |
 |---|---|---|---|
 | M | `container.cpu.time` / `container.cpu.usage` | C / G | `container.id`, `container.name`, `cpu.mode` |
-| M | `container.memory.usage` | UDC (By) | `container.id` (de `memory.current`) |
-| M | `harnesssphere.container.memory.limit` † | G (By) | de `memory.max` (semconv de limite ainda evoluindo) |
-| M | `harnesssphere.container.memory.throttled` † | C | eventos OOM/`memory.events` |
-| M | `container.disk.io` | C (By) | `container.id`, `disk.io.direction` (de `io.stat`) |
-| M | `harnesssphere.container.cpu.throttled` † | C | `nr_throttled`/`throttled_usec` de `cpu.stat` |
-| L | ciclo de vida | L | container caiu / sumiu do cgroup → WARN (e breaker degrada) |
-| T | — | — | **N/A** — métricas de cgroup são não-transacionais; sem span. |
+| M | `container.memory.usage` | UDC (By) | `container.id` (from `memory.current`) |
+| M | `harnesssphere.container.memory.limit` † | G (By) | from `memory.max` (limit semconv still evolving) |
+| M | `harnesssphere.container.memory.throttled` † | C | OOM events/`memory.events` |
+| M | `container.disk.io` | C (By) | `container.id`, `disk.io.direction` (from `io.stat`) |
+| M | `harnesssphere.container.cpu.throttled` † | C | `nr_throttled`/`throttled_usec` from `cpu.stat` |
+| L | lifecycle | L | container went down / disappeared from the cgroup → WARN (and breaker degrades) |
+| T | — | — | **N/A** — cgroup metrics are non-transactional; no span. |
 
-### 3.d Gateway (controle do harness) — **OPCIONAL**
+### 3.d Gateway (harness control) — **OPTIONAL**
 
-Latência de rotas e saúde de conexões. **Fonte real (pesquisa):** OpenClaw expõe
-Prometheus em `GET /api/diagnostics/prometheus` → scrape ativo (`openclaw_model_call_duration_seconds`,
+Route latency and connection health. **Real source (research):** OpenClaw exposes
+Prometheus at `GET /api/diagnostics/prometheus` → active scrape (`openclaw_model_call_duration_seconds`,
 `openclaw_run_*`, `openclaw_message_*`, `openclaw_liveness_*`, `openclaw_memory_bytes`),
-mapeados para os instrumentos abaixo. Tráfego que chega por OTLP (Opção A) é enriquecido
-e repassado. Onde não há `/metrics`, health-probe ativo do watcher.
+mapped to the instruments below. Traffic that arrives via OTLP (Option A) is enriched
+and forwarded. Where there is no `/metrics`, the watcher does an active health probe.
 
-| Sinal | Nome | Tipo | Atributos / notas |
+| Signal | Name | Type | Attributes / notes |
 |---|---|---|---|
 | M | `http.server.request.duration` | H (s) | `http.request.method`, `http.route`, `http.response.status_code`, `server.address` |
 | M | `http.server.active_requests` | UDC | `http.request.method`, `http.route` |
-| M | `harnesssphere.gateway.up` † | G (0/1) | `gateway.name`, `route` — health probe do watcher |
+| M | `harnesssphere.gateway.up` † | G (0/1) | `gateway.name`, `route` — watcher health probe |
 | M | `harnesssphere.gateway.connections.active` † | UDC | `gateway.name`, `state` |
-| M | `harnesssphere.gateway.probe.latency` † | H (s) | latência do health-check ativo |
-| L | conexão derrubada / upstream 5xx | L (WARN/ERROR) | `gateway.name`, `route`, `status_code` |
-| T | (passthrough) | T | se o gateway propaga `traceparent`, o watcher repassa contexto p/ correlação |
+| M | `harnesssphere.gateway.probe.latency` † | H (s) | active health-check latency |
+| L | dropped connection / upstream 5xx | L (WARN/ERROR) | `gateway.name`, `route`, `status_code` |
+| T | (passthrough) | T | if the gateway propagates `traceparent`, the watcher forwards the context for correlation |
 
-### 3.e Harness (IA) — **OPCIONAL**  ← coração do diferencial
+### 3.e Harness (AI) — **OPTIONAL**  ← the heart of the differentiator
 
-Segue **GenAI semantic conventions** (`gen_ai.*`). Atributos verificados:
+Follows the **GenAI semantic conventions** (`gen_ai.*`). Verified attributes:
 `gen_ai.operation.name`, `gen_ai.provider.name`, `gen_ai.request.model`,
 `gen_ai.response.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`.
 
-**Fonte real (pesquisa):** esta camada **não é observável passivamente** — é ingerida
-via OTLP que OpenClaw/Hermes empurram (Opção A) e/ou scrape do Prometheus do OpenClaw.
-O Enricher (§1.5) **normaliza** para `gen_ai.*`: OpenClaw já usa semconv +
-`openclaw.tokens`/`openclaw.harness.run`; Hermes usa dupla convenção
-(`gen_ai.usage.input_tokens` **e** OpenInference `llm.token_count.prompt`) → mapear ambas.
-Memory files / search index hits são `harnesssphere.*` † (derivados/observados; OpenClaw
-expõe `openclaw.memory.pressure`/`openclaw_memory_bytes` como proxy parcial).
+**Real source (research):** this layer is **not passively observable** — it is ingested
+via OTLP that OpenClaw/Hermes push (Option A) and/or scrape of OpenClaw's Prometheus.
+The Enricher (§1.5) **normalizes** to `gen_ai.*`: OpenClaw already uses semconv +
+`openclaw.tokens`/`openclaw.harness.run`; Hermes uses a dual convention
+(`gen_ai.usage.input_tokens` **and** OpenInference `llm.token_count.prompt`) → map both.
+Memory files / search index hits are `harnesssphere.*` † (derived/observed; OpenClaw
+exposes `openclaw.memory.pressure`/`openclaw_memory_bytes` as a partial proxy).
 
-| Sinal | Nome | Tipo | Atributos / notas |
+| Signal | Name | Type | Attributes / notes |
 |---|---|---|---|
 | M | `gen_ai.client.token.usage` | H (`{token}`) | `gen_ai.token.type` (input/output), `gen_ai.request.model`, `gen_ai.provider.name`, `gen_ai.operation.name` |
 | M | `gen_ai.client.operation.duration` | H (s) | `gen_ai.operation.name`, `gen_ai.request.model`, `gen_ai.provider.name` |
-| M | `harnesssphere.harness.messages` † | C | `role` (user/assistant/system/tool), `conversation.id?` — contagem de mensagens |
-| M | `harnesssphere.harness.token.cache` † | C (`{token}`) | de `gen_ai.usage.cache_read.input_tokens` / `cache_creation.input_tokens` |
-| M | `harnesssphere.harness.memory.files` † | G | nº de arquivos de memória; `harnesssphere.harness.memory.bytes` † G (By) |
-| M | `harnesssphere.harness.search_index.queries` † | C | `result` (hit/miss) — hits/misses do search index |
-| M | `harnesssphere.harness.search_index.hit_ratio` † | G (0..1) | derivado (observable) |
-| L | erro/refusal/cutoff do modelo | L (WARN/ERROR) | `gen_ai.response.finish_reasons`, `error.type` |
-| T | `{gen_ai.operation.name} {model}` | T (span, CLIENT) | uma transação de IA = span; attrs `gen_ai.*` (sem conteúdo por padrão — GA-05) |
-| T | `invoke_agent {agent}` / child spans | T | quando o harness expõe estrutura de agente/turno |
+| M | `harnesssphere.harness.messages` † | C | `role` (user/assistant/system/tool), `conversation.id?` — message count |
+| M | `harnesssphere.harness.token.cache` † | C (`{token}`) | from `gen_ai.usage.cache_read.input_tokens` / `cache_creation.input_tokens` |
+| M | `harnesssphere.harness.memory.files` † | G | number of memory files; `harnesssphere.harness.memory.bytes` † G (By) |
+| M | `harnesssphere.harness.search_index.queries` † | C | `result` (hit/miss) — search index hits/misses |
+| M | `harnesssphere.harness.search_index.hit_ratio` † | G (0..1) | derived (observable) |
+| L | model error/refusal/cutoff | L (WARN/ERROR) | `gen_ai.response.finish_reasons`, `error.type` |
+| T | `{gen_ai.operation.name} {model}` | T (span, CLIENT) | one AI transaction = span; `gen_ai.*` attrs (no content by default — GA-05) |
+| T | `invoke_agent {agent}` / child spans | T | when the harness exposes an agent/turn structure |
 
-> Conteúdo de prompts/completions **não** é capturado por padrão (privacidade, GA-05);
-> só contadores/durações. Captura de conteúdo é opt-in explícito.
+> Prompt/completion content is **not** captured by default (privacy, GA-05);
+> only counters/durations. Content capture is explicit opt-in.
 
-### 3.f Tools — **OPCIONAL**
+### 3.f Tools — **OPTIONAL**
 
-Execução de ferramentas injetadas. Span de tool segue semconv GenAI
-(`execute_tool {tool_name}`). **Fonte real:** OpenClaw emite
-`openclaw.tool.execution.duration_ms` / `openclaw_tool_execution_total` e span
-`openclaw.tool.execution`; Hermes emite span `tool.{name}` filho de `api.{model}`. O
-Enricher mapeia ambos para os instrumentos abaixo.
+Execution of injected tools. The tool span follows the GenAI semconv
+(`execute_tool {tool_name}`). **Real source:** OpenClaw emits
+`openclaw.tool.execution.duration_ms` / `openclaw_tool_execution_total` and the span
+`openclaw.tool.execution`; Hermes emits the span `tool.{name}` as a child of `api.{model}`. The
+Enricher maps both to the instruments below.
 
-| Sinal | Nome | Tipo | Atributos / notas |
+| Signal | Name | Type | Attributes / notes |
 |---|---|---|---|
 | M | `harnesssphere.tool.execution.duration` † | H (s) | `gen_ai.tool.name`, `gen_ai.tool.type`, `outcome` (ok/error) |
-| M | `harnesssphere.tool.calls` † | C | `gen_ai.tool.name`, `outcome` — chamadas por ferramenta |
-| L | erro de execução de tool | L (ERROR) | `gen_ai.tool.name`, `error.type`, `error.message` |
-| T | `execute_tool {tool_name}` | T (span, INTERNAL) | `gen_ai.tool.name`, `gen_ai.tool.call.id`; child do span de IA pai (3.e) |
+| M | `harnesssphere.tool.calls` † | C | `gen_ai.tool.name`, `outcome` — calls per tool |
+| L | tool execution error | L (ERROR) | `gen_ai.tool.name`, `error.type`, `error.message` |
+| T | `execute_tool {tool_name}` | T (span, INTERNAL) | `gen_ai.tool.name`, `gen_ai.tool.call.id`; child of the parent AI span (3.e) |
 
-### 3.g API Calls — **OPCIONAL**
+### 3.g API Calls — **OPTIONAL**
 
-Tráfego HTTP/gRPC de entrada e saída. `http.*` e `rpc.*` (semconv).
+Inbound and outbound HTTP/gRPC traffic. `http.*` and `rpc.*` (semconv).
 
-| Sinal | Nome | Tipo | Atributos / notas |
+| Signal | Name | Type | Attributes / notes |
 |---|---|---|---|
 | M | `http.client.request.duration` | H (s) | `http.request.method`, `server.address`, `http.response.status_code`, `network.protocol.version` |
 | M | `http.server.request.duration` | H (s) | `http.request.method`, `http.route`, `http.response.status_code` |
-| M | `http.client.request.body.size` / `...response.body.size` | H (By) | tamanho de payloads (se disponível) |
+| M | `http.client.request.body.size` / `...response.body.size` | H (By) | payload size (if available) |
 | M | `rpc.client.duration` / `rpc.server.duration` | H (s) | `rpc.system` (grpc), `rpc.service`, `rpc.method`, `rpc.grpc.status_code` |
-| M | `harnesssphere.api.requests` † | C | `direction` (inbound/outbound), `http.response.status_code`, classe (2xx/4xx/5xx) |
-| L | 4xx/5xx | L (WARN/ERROR) | método, rota, status, latência |
-| T | span HTTP/gRPC client/server | T | `SpanKind` Client/Server; correlaciona com spans de IA (3.e) via trace context |
+| M | `harnesssphere.api.requests` † | C | `direction` (inbound/outbound), `http.response.status_code`, class (2xx/4xx/5xx) |
+| L | 4xx/5xx | L (WARN/ERROR) | method, route, status, latency |
+| T | HTTP/gRPC client/server span | T | `SpanKind` Client/Server; correlates with AI spans (3.e) via trace context |
 
 ---
 
-## 4. Estratégia de Compilação & Distribuição (Cross-Compilation)
+## 4. Compilation & Distribution Strategy (Cross-Compilation)
 
 ### 4.1 Targets
 
-| Plataforma | Target triple | Estratégia |
+| Platform | Target triple | Strategy |
 |---|---|---|
-| Linux x86_64 (estático) | `x86_64-unknown-linux-musl` | `cross` (musl 100% estático, roda em qualquer distro) |
-| Linux ARM64 (estático) | `aarch64-unknown-linux-musl` | `cross` |
+| Linux x86_64 (static) | `x86_64-unknown-linux-musl` | `cross` (100% static musl, runs on any distro) |
+| Linux ARM64 (static) | `aarch64-unknown-linux-musl` | `cross` |
 | Raspberry Pi 32-bit | `armv7-unknown-linux-musleabihf` | `cross` |
-| Raspberry Pi 64-bit | `aarch64-unknown-linux-musl` | `cross` (mesmo do ARM64) |
-| macOS Intel | `x86_64-apple-darwin` | `cargo-zigbuild` (cross do Linux/CI) ou nativo |
-| macOS Apple Silicon | `aarch64-apple-darwin` | `cargo-zigbuild` ou nativo |
-| macOS Universal | `universal2-apple-darwin` | `cargo-zigbuild --target universal2-apple-darwin` (1 binário fat) |
+| Raspberry Pi 64-bit | `aarch64-unknown-linux-musl` | `cross` (same as ARM64) |
+| macOS Intel | `x86_64-apple-darwin` | `cargo-zigbuild` (cross from Linux/CI) or native |
+| macOS Apple Silicon | `aarch64-apple-darwin` | `cargo-zigbuild` or native |
+| macOS Universal | `universal2-apple-darwin` | `cargo-zigbuild --target universal2-apple-darwin` (1 fat binary) |
 
-### 4.2 Ferramentas (recomendação)
+### 4.2 Tools (recommendation)
 
-- **`cross`** (cross-rs) — para todos os targets Linux/ARM/musl. Usa containers com
-  toolchains prontas; zero setup de cross-linker local. É o caminho mais simples e
-  reproduzível para musl + Raspberry Pi.
-- **`cargo-zigbuild`** — usa o `zig cc` como linker para cross-compilar **macOS
-  (incl. universal2)** e glibc versionado a partir de uma CI Linux, sem precisar de um
-  Mac. Resolve o problema clássico de cross-compile para Apple.
-- Alternativa nativa macOS: rodar `cargo build` num runner macOS e fundir com
-  `lipo -create` (ou deixar o `universal2` do zigbuild fazer).
+- **`cross`** (cross-rs) — for all Linux/ARM/musl targets. Uses containers with
+  ready-made toolchains; zero local cross-linker setup. It is the simplest and most
+  reproducible path for musl + Raspberry Pi.
+- **`cargo-zigbuild`** — uses `zig cc` as the linker to cross-compile **macOS
+  (incl. universal2)** and versioned glibc from a Linux CI, with no need for a
+  Mac. Solves the classic Apple cross-compile problem.
+- Native macOS alternative: run `cargo build` on a macOS runner and merge with
+  `lipo -create` (or let zigbuild's `universal2` do it).
 
-> Recomendação: **`cross` (Linux/ARM) + `cargo-zigbuild` (macOS)** cobre todos os
-> targets a partir de uma única pipeline Linux. Runner macOS só se quisermos assinatura/
-> notarização Apple.
+> Recommendation: **`cross` (Linux/ARM) + `cargo-zigbuild` (macOS)** covers all
+> targets from a single Linux pipeline. A macOS runner only if we want Apple signing/
+> notarization.
 
-### 4.3 `.cargo/config.toml` (esboço)
+### 4.3 `.cargo/config.toml` (sketch)
 
 ```toml
 [target.x86_64-unknown-linux-musl]
 rustflags = ["-C", "target-feature=+crt-static"]
 
 [target.armv7-unknown-linux-musleabihf]
-# linker provido pela imagem do `cross`; nada a fixar localmente
+# linker provided by the `cross` image; nothing to pin locally
 ```
 
-### 4.4 Perfil de release (binário enxuto — NFR-02)
+### 4.4 Release profile (lean binary — NFR-02)
 
 ```toml
 [profile.release]
-opt-level = "z"      # otimiza tamanho
+opt-level = "z"      # optimize for size
 lto = true           # link-time optimization (fat)
-codegen-units = 1    # melhor otimização, build mais lento
-panic = "abort"      # menor; combina com catch_unwind? ⚠ ver nota
-strip = true         # remove símbolos
+codegen-units = 1    # better optimization, slower build
+panic = "abort"      # smaller; pairs with catch_unwind? ⚠ see note
+strip = true         # remove symbols
 ```
 
-> ⚠ **Nota de design importante:** `panic = "abort"` é **incompatível** com a estratégia
-> de `catch_unwind` da §2.1 (que precisa de `panic = "unwind"` para conter panics de
-> coletor). **Decisão:** manter `panic = "unwind"` no release e obter tamanho via
-> `opt-level="z"` + `lto` + `strip`. A resiliência (FR-RES-03) tem prioridade sobre os
-> últimos KB de binário. (Trade-off a confirmar na aprovação.)
+> ⚠ **Important design note:** `panic = "abort"` is **incompatible** with the
+> `catch_unwind` strategy from §2.1 (which needs `panic = "unwind"` to contain collector
+> panics). **Decision:** keep `panic = "unwind"` in release and obtain size via
+> `opt-level="z"` + `lto` + `strip`. Resilience (FR-RES-03) takes priority over the
+> last few KB of binary. (Trade-off to confirm at approval.)
 
-### 4.5 Pipeline (alto nível)
+### 4.5 Pipeline (high level)
 
 ```
 matrix targets → (cross | cargo-zigbuild) build --release
-              → strip/verifica estático (ldd deve falhar nos musl)
-              → empacota: harnesssphere-<version>-<target>(.tar.gz)
-              → checksums + (opcional) cosign/sign + GitHub Release
+              → strip/verify static (ldd should fail on the musl ones)
+              → package: harnesssphere-<version>-<target>(.tar.gz)
+              → checksums + (optional) cosign/sign + GitHub Release
 ```
 
 ---
 
-## 5. Riscos & decisões em aberto (para a aprovação)
+## 5. Risks & open decisions (for approval)
 
-1. **`panic=unwind` vs binário mínimo** (§4.4) — recomendo unwind. Confirmar.
-2. **RESOLVIDO pela pesquisa → vira FORK DE ESCOPO A vs B (§1.5).** OpenClaw e Hermes
-   **empurram OTLP** (não scrape de traces); OpenClaw também expõe Prometheus. Portanto
-   a camada de IA é **ingerida/enriquecida**, não originada. Decisão pendente: Opção A
-   (sidecar collector unificado, recomendado) vs Opção B (agente de host focado).
-   PicoClaw fica como Optional a confirmar.
-3. **Interpretação de "Crítico falha → app crasha"** — CONFIRMADO pelo usuário: *falha
-   persistente acima de THRESHOLD* (tolera erro transitório de um `/proc` ruim), não
-   *primeiro erro → crash*. É a escolha de engenharia mais robusta, mas é uma releitura
-   do requisito; **precisa de confirmação explícita**.
-4. **Dynamic dispatch vs plugins `.so`** — v1 usa features em compile-time (decidido);
-   plugins dinâmicos ficam como não-objetivo.
-5. **Privacidade de conteúdo GenAI** (GA-05) — default = sem conteúdo. Confirmar.
-6. **Atributos `harnesssphere.*` †** — vários sinais (memory files, search index, gateway
-   up) não têm semconv oficial; usamos namespace próprio estável. Revisar se algum deve
-   mapear para convenção existente.
+1. **`panic=unwind` vs minimal binary** (§4.4) — I recommend unwind. Confirm.
+2. **RESOLVED by research → becomes SCOPE FORK A vs B (§1.5).** OpenClaw and Hermes
+   **push OTLP** (not trace scraping); OpenClaw also exposes Prometheus. Therefore
+   the AI layer is **ingested/enriched**, not originated. Decision pending: Option A
+   (unified sidecar collector, recommended) vs Option B (focused host agent).
+   PicoClaw remains Optional, to be confirmed.
+3. **Interpretation of "Critical fails → app crashes"** — CONFIRMED by the user: *persistent
+   failure above THRESHOLD* (tolerates a transient error from a bad `/proc`), not
+   *first error → crash*. It is the more robust engineering choice, but it is a reinterpretation
+   of the requirement; **it needs explicit confirmation**.
+4. **Dynamic dispatch vs `.so` plugins** — v1 uses compile-time features (decided);
+   dynamic plugins remain a non-goal.
+5. **GenAI content privacy** (GA-05) — default = no content. Confirm.
+6. **`harnesssphere.*` † attributes** — several signals (memory files, search index, gateway
+   up) have no official semconv; we use our own stable namespace. Review whether any should
+   map to an existing convention.

@@ -1,8 +1,8 @@
-//! `harnesssphere-collectors` — driven adapters de fonte (pull).
+//! `harnesssphere-collectors` — driven source adapters (pull).
 //!
-//! Critical (sempre compilado): `host`, `self`. Optional (feature-gated): container,
-//! prometheus, etc. Adicionar um coletor = novo módulo implementando `SignalSource` +
-//! 1 linha no composition root. O core não muda.
+//! Critical (always compiled): `host`, `self`. Optional (feature-gated): container,
+//! prometheus, etc. Adding a collector = a new module implementing `SignalSource` +
+//! 1 line in the composition root. The core does not change.
 
 mod host;
 mod self_watcher;

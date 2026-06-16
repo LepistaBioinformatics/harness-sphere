@@ -1,8 +1,8 @@
 //! `harnesssphere-runtime` — supervisor/scheduler (driving).
 //!
-//! Orquestra os ports: uma task por `SignalSource`, isolamento de falha em 3 camadas
-//! (Result → catch_unwind → task), circuit breaker e política de criticidade. Dreno
-//! único faz batch e chama o `SignalExporter`.
+//! Orchestrates the ports: one task per `SignalSource`, 3-layer failure isolation
+//! (Result → catch_unwind → task), circuit breaker and criticality policy. A single
+//! drain batches and calls the `SignalExporter`.
 
 use futures::FutureExt;
 use harnesssphere_domain::{
@@ -16,9 +16,10 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::time::{interval, Instant, MissedTickBehavior};
 
-/// Sink baseado em canal bounded. Sob backpressure descarta o sinal **mais novo**
-/// (drop-newest) — `tokio::mpsc` não permite pop da frente, então drop-oldest exigiria
-/// outra estrutura; fica como melhoria futura. O descarte é contado em métrica self.
+/// Bounded-channel-based sink. Under backpressure it drops the **newest** signal
+/// (drop-newest) — `tokio::mpsc` doesn't allow popping from the front, so drop-oldest
+/// would require another structure; left as a future improvement. The drop is counted in
+/// a self metric.
 #[derive(Clone)]
 pub struct ChannelSink {
     tx: mpsc::Sender<Signal>,
@@ -33,7 +34,7 @@ impl ChannelSink {
 
 impl SignalSink for ChannelSink {
     fn emit(&self, signal: Signal) {
-        // Não-bloqueante: se o canal está cheio, o sinal novo é descartado (drop-newest).
+        // Non-blocking: if the channel is full, the new signal is dropped (drop-newest).
         if self.tx.try_send(signal).is_err() {
             self.dropped.fetch_add(1, Ordering::Relaxed);
         }
@@ -44,7 +45,7 @@ pub struct RuntimeConfig {
     pub channel_capacity: usize,
     pub batch_size: usize,
     pub batch_interval: Duration,
-    /// Falhas consecutivas a partir das quais um source Critical é fatal.
+    /// Consecutive failures at which a Critical source becomes fatal.
     pub critical_threshold: u32,
 }
 
@@ -59,7 +60,7 @@ impl Default for RuntimeConfig {
     }
 }
 
-/// Sinaliza ao supervisor-mor que um source Critical morreu de forma irreversível.
+/// Signals the top-level supervisor that a Critical source has died irrecoverably.
 #[derive(Debug)]
 pub struct FatalSignal {
     pub source: &'static str,
@@ -85,8 +86,8 @@ impl Supervisor {
         }
     }
 
-    /// Roda até receber Ctrl-C ou até um source Critical falhar de forma fatal.
-    /// Retorna `Err(FatalSignal)` no caso fatal (o binário converte em exit != 0).
+    /// Runs until Ctrl-C is received or a Critical source fails fatally.
+    /// Returns `Err(FatalSignal)` in the fatal case (the binary converts it to exit != 0).
     pub async fn run(self) -> Result<(), FatalSignal> {
         let (tx, rx) = mpsc::channel::<Signal>(self.cfg.channel_capacity);
         let (fatal_tx, mut fatal_rx) = mpsc::channel::<FatalSignal>(4);
@@ -95,7 +96,7 @@ impl Supervisor {
             dropped: Arc::new(AtomicU64::new(0)),
         };
 
-        // Dreno: batch + export.
+        // Drain: batch + export.
         let drain = tokio::spawn(drain_loop(
             rx,
             self.exporter.clone(),
@@ -103,7 +104,7 @@ impl Supervisor {
             self.cfg.batch_interval,
         ));
 
-        // Uma task por source.
+        // One task per source.
         let mut handles = Vec::new();
         for source in self.sources {
             let sink = sink.clone();
@@ -122,7 +123,7 @@ impl Supervisor {
                 None => Ok(()),
             },
             _ = tokio::signal::ctrl_c() => {
-                tracing::info!("ctrl-c recebido — encerrando");
+                tracing::info!("ctrl-c received — shutting down");
                 Ok(())
             }
         };
@@ -145,15 +146,15 @@ async fn supervise_source(
     let desc = source.descriptor().clone();
     let mut breaker = CircuitBreaker::new(critical_threshold);
 
-    // Probe inicial.
+    // Initial probe.
     match source.probe().await {
         ProbeResult::Ready => {}
         ProbeResult::NotApplicable => {
-            tracing::info!(source = desc.name, "não aplicável neste host — desabilitado");
+            tracing::info!(source = desc.name, "not applicable on this host — disabled");
             return;
         }
         ProbeResult::Unavailable(msg) => {
-            tracing::warn!(source = desc.name, %msg, "alvo indisponível no boot — degraded");
+            tracing::warn!(source = desc.name, %msg, "target unavailable at boot — degraded");
             breaker.trip_open();
         }
         ProbeResult::Fatal(msg) => {
@@ -173,13 +174,13 @@ async fn supervise_source(
     loop {
         ticker.tick().await;
 
-        // Backoff quando o breaker está aberto.
+        // Backoff when the breaker is open.
         if breaker.is_open() {
             tokio::time::sleep(breaker.backoff()).await;
         }
 
         let started = Instant::now();
-        // Camadas de contenção: Result (esperado) + catch_unwind (panic).
+        // Containment layers: Result (expected) + catch_unwind (panic).
         let outcome = AssertUnwindSafe(source.collect(&sink)).catch_unwind().await;
 
         match outcome {
@@ -201,7 +202,7 @@ async fn supervise_source(
                     desc.criticality,
                     &mut breaker,
                     &fatal_tx,
-                    "panic contido no coletor".to_string(),
+                    "panic contained in the collector".to_string(),
                 )
                 .await;
             }
@@ -222,7 +223,7 @@ async fn handle_failure(
             tracing::warn!(source = name, consecutive = breaker.consecutive_failures(), %err, "degraded");
         }
         FailureAction::Fatal => {
-            tracing::error!(source = name, %err, "falha CRÍTICA persistente — encerrando");
+            tracing::error!(source = name, %err, "persistent CRITICAL failure — shutting down");
             let _ = fatal_tx
                 .send(FatalSignal {
                     source: name,
@@ -269,7 +270,7 @@ async fn drain_loop(
 async fn export_batch(exporter: &Arc<dyn SignalExporter>, buf: &mut Vec<Signal>) {
     let batch = std::mem::take(buf);
     if let Err(err) = exporter.export(batch).await {
-        // Falha de export NUNCA bloqueia coleta (NFR-04) — só registra.
-        tracing::warn!(%err, "falha ao exportar batch — descartado");
+        // Export failure NEVER blocks collection (NFR-04) — just log it.
+        tracing::warn!(%err, "failed to export batch — dropped");
     }
 }

@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 
 [features]
-# Coletores Critical (host, self) são sempre compilados. Optional ficam atrás de feature.
+# Critical collectors (host, self) are always compiled. Optional ones sit behind a feature.
 default = []
 container = []
 prometheus = []

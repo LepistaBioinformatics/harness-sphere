@@ -1,8 +1,8 @@
-# HarnessSphere — config de exemplo (sprint 1).
-# Uso: ./harnesssphere config.example.toml
-# Override de exporter por env: HARNESSSPHERE_EXPORTER=stdout
+# HarnessSphere — example config (sprint 1).
+# Usage: ./harnesssphere config.example.toml
+# Override the exporter via env: HARNESSSPHERE_EXPORTER=stdout
 
-host_interval_secs = 5     # intervalo de coleta do host (Critical)
-self_interval_secs = 10    # intervalo de auto-observabilidade (Critical)
-critical_threshold = 3     # falhas consecutivas de um Critical antes de encerrar (exit != 0)
-exporter = "stdout"        # "stdout" (sprint 1). "otlp" chega via feature `otlp`.
+host_interval_secs = 5     # host collection interval (Critical)
+self_interval_secs = 10    # self-observability interval (Critical)
+critical_threshold = 3     # consecutive failures of a Critical before exiting (exit != 0)
+exporter = "stdout"        # "stdout" (sprint 1). "otlp" arrives via the `otlp` feature.

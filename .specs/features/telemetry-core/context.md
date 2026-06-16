@@ -1,75 +1,75 @@
-# Feature: telemetry-core — Context (decisões do usuário + pesquisa)
+# Feature: telemetry-core — Context (user decisions + research)
 
-> Resolve as gray areas GA-01..05 do spec com base em decisões do usuário e pesquisa
-> na documentação do ecossistema Claw/Harness (jun/2026).
+> Resolves the gray areas GA-01..05 of the spec based on user decisions and research
+> into the Claw/Harness ecosystem documentation (Jun/2026).
 
-## Decisões do usuário
+## User decisions
 
-- **GA / Crash crítico (confirmado):** "Host e Watcher obrigatórios" = **falha
-  persistente acima de THRESHOLD → exit ≠ 0**. Erro transitório (um `/proc`/leitura
-  única ruim) é tolerado. (Resolve risco #3 do design.)
-- **GA-01/03/04 (fonte dos dados):** usuário pediu para consultar a documentação de
-  **openclaw, picoclaw, hermes agent** — ver pesquisa abaixo.
-- **Escopo (FORK A vs B) — DECIDIDO: Opção A** (sidecar collector unificado). O
-  HarnessSphere embute receiver OTLP local + scrape Prometheus + coletores host/cgroup/
-  self + enrich + 1 exporter OTLP. A telemetria de IA passa pelo watcher e ganha contexto
-  de host. (Resolve GA-01/03/04.)
-- **GA-05 (conteúdo GenAI) — DECIDIDO: opt-in explícito.** Default = só métricas/
-  contadores/durações, sem texto de prompts/completions. Captura de conteúdo só com flag
-  de config explícita **por camada**. O enricher deve **redigir** conteúdo por padrão,
-  inclusive em passthrough do que OpenClaw/Hermes mandarem, a menos que a flag esteja on.
+- **GA / Critical crash (confirmed):** "Host and Watcher mandatory" = **persistent
+  failure above THRESHOLD → exit ≠ 0**. A transient error (a single bad `/proc`/read)
+  is tolerated. (Resolves design risk #3.)
+- **GA-01/03/04 (data source):** the user asked to consult the documentation of
+  **openclaw, picoclaw, hermes agent** — see the research below.
+- **Scope (FORK A vs B) — DECIDED: Option A** (unified sidecar collector). The
+  HarnessSphere embeds a local OTLP receiver + Prometheus scrape + host/cgroup/
+  self collectors + enrich + 1 OTLP exporter. The AI telemetry passes through the watcher and
+  gains host context. (Resolves GA-01/03/04.)
+- **GA-05 (GenAI content) — DECIDED: explicit opt-in.** Default = metrics/
+  counters/durations only, no prompt/completion text. Content capture only with an explicit
+  config flag **per layer**. The enricher must **redact** content by default,
+  including in passthrough of whatever OpenClaw/Hermes send, unless the flag is on.
 
-## Pesquisa — como o ecossistema expõe telemetria
+## Research — how the ecosystem exposes telemetry
 
-### OpenClaw (gateway + harness) — fonte primária
-- **PUSH OTLP/HTTP (protobuf)** para collector; default `http://otel-collector:4318`,
-  configurável via `diagnostics.otel.endpoint` ou `OTEL_EXPORTER_OTLP_ENDPOINT`.
-  Metrics+traces ligados por padrão; logs opt-in.
-- Emite **semconv GenAI**: `gen_ai.client.token.usage`,
-  `gen_ai.client.operation.duration` (com `OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental`,
+### OpenClaw (gateway + harness) — primary source
+- **PUSH OTLP/HTTP (protobuf)** to a collector; default `http://otel-collector:4318`,
+  configurable via `diagnostics.otel.endpoint` or `OTEL_EXPORTER_OTLP_ENDPOINT`.
+  Metrics+traces on by default; logs opt-in.
+- Emits **GenAI semconv**: `gen_ai.client.token.usage`,
+  `gen_ai.client.operation.duration` (with `OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental`,
   spans `{operation} {model}`).
-- Emite **métricas próprias** `openclaw.*`: `openclaw.tokens`, `openclaw.cost.usd`,
+- Emits its **own metrics** `openclaw.*`: `openclaw.tokens`, `openclaw.cost.usd`,
   `openclaw.run.duration_ms`, `openclaw.model_call.{duration_ms,request_bytes,response_bytes,time_to_first_byte_ms}`,
   `openclaw.tool.execution.duration_ms`, `openclaw.tool.loop.iterations`,
   `openclaw.harness.duration_ms`, `openclaw.session.*`, `openclaw.queue.*`.
-- Spans próprios: `openclaw.harness.run`, `openclaw.model.call`, `openclaw.model.usage`,
+- Its own spans: `openclaw.harness.run`, `openclaw.model.call`, `openclaw.model.usage`,
   `openclaw.run`, `openclaw.tool.execution`, `openclaw.session.stuck`, `openclaw.memory.pressure`.
-- **TAMBÉM expõe Prometheus** (plugin `diagnostics-prometheus`) em
+- **ALSO exposes Prometheus** (plugin `diagnostics-prometheus`) at
   `GET /api/diagnostics/prometheus`: `openclaw_run_*`, `openclaw_model_call_*`,
   `openclaw_model_tokens_total`, `openclaw_model_cost_usd_total`, `openclaw_tool_execution_*`,
   `openclaw_message_received_total`, `openclaw_session_*`,
   `openclaw_liveness_event_loop_delay_p99_seconds`, `openclaw_liveness_cpu_core_ratio`,
-  `openclaw_memory_bytes`. Cardinalidade limitada (cap 2048 séries, labels sem IDs crus).
+  `openclaw_memory_bytes`. Limited cardinality (cap 2048 series, labels without raw IDs).
 
-### Hermes Agent (+ plugin hermes-otel) — fonte primária
-- **PUSH OTLP** via BatchSpanProcessor (não-bloqueante; fan-out paralelo p/ múltiplos
+### Hermes Agent (+ plugin hermes-otel) — primary source
+- **PUSH OTLP** via BatchSpanProcessor (non-blocking; parallel fan-out to multiple
   backends).
-- Hierarquia de spans: `session.{platform}` → `llm.{model}` → `api.{model}` (token
+- Span hierarchy: `session.{platform}` → `llm.{model}` → `api.{model}` (token
   counts) → `tool.{name}`.
-- Métricas: input/completion/total tokens, tool calls, API requests (duração/contagem),
-  resumo de sessão (tool count, skills, api-call count, status).
-- **Dupla convenção** de atributos: GenAI/Langfuse (`gen_ai.usage.input_tokens`,
-  `gen_ai.content.prompt`) **e** OpenInference/Phoenix (`llm.token_count.prompt`,
-  `input.value`). → HarnessSphere deve normalizar ambas para semconv `gen_ai.*`.
-- Usa **MLflow AI Gateway** como provider default (routing, governança, budgets,
+- Metrics: input/completion/total tokens, tool calls, API requests (duration/count),
+  session summary (tool count, skills, api-call count, status).
+- **Dual convention** of attributes: GenAI/Langfuse (`gen_ai.usage.input_tokens`,
+  `gen_ai.content.prompt`) **and** OpenInference/Phoenix (`llm.token_count.prompt`,
+  `input.value`). → HarnessSphere must normalize both to the `gen_ai.*` semconv.
+- Uses **MLflow AI Gateway** as the default provider (routing, governance, budgets,
   guardrails, usage logs).
 
-### PicoClaw — fonte secundária (a confirmar)
-- Assistente ultra-leve em Go (<10 MB RAM), multi-arch (alinhado ao alvo Raspberry Pi).
-- Observabilidade aparece via **ClawMetry** (dashboard externo), não confirmado se há
-  OTLP/Prometheus nativo (docs retornaram 403). **TODO:** confirmar mecanismo de
-  exposição; provável fallback = parsing de logs ou endpoint ClawMetry.
+### PicoClaw — secondary source (to be confirmed)
+- Ultra-light assistant in Go (<10 MB RAM), multi-arch (aligned with the Raspberry Pi target).
+- Observability appears via **ClawMetry** (external dashboard), not confirmed whether there is
+  native OTLP/Prometheus (docs returned 403). **TODO:** confirm the exposure
+  mechanism; likely fallback = log parsing or the ClawMetry endpoint.
 
-## Consequência arquitetural (decisão pendente do usuário)
+## Architectural consequence (user decision pending)
 
-Os componentes-chave **empurram OTLP** (não expõem traces para scraping). Para entregar
-o "painel único" da visão, o HarnessSphere precisa de **dois planos**:
+The key components **push OTLP** (they do not expose traces for scraping). To deliver
+the "single pane" of the vision, HarnessSphere needs **two planes**:
 
-1. **Plano de PULL (scrape):** Host, Self, Container (cgroup), e Prometheus do OpenClaw
-   (`/api/diagnostics/prometheus`). → trait `Collector` (já desenhado).
-2. **Plano de PUSH (ingest):** um **receiver OTLP local** (porta ex. 4318) para onde
-   OpenClaw/Hermes empurram; o HarnessSphere **enriquece** com `host.*`/`container.*`/
-   correlação e **re-exporta** ao backend upstream. → novo trait `Receiver` + pipeline
-   de processamento (padrão OTel Collector: receiver → processor/enrich → exporter).
+1. **PULL plane (scrape):** Host, Self, Container (cgroup), and OpenClaw's Prometheus
+   (`/api/diagnostics/prometheus`). → `Collector` trait (already designed).
+2. **PUSH plane (ingest):** a **local OTLP receiver** (port e.g. 4318) where
+   OpenClaw/Hermes push; HarnessSphere **enriches** with `host.*`/`container.*`/
+   correlation and **re-exports** to the upstream backend. → new `Receiver` trait + processing
+   pipeline (OTel Collector pattern: receiver → processor/enrich → exporter).
 
-→ Ver fork de escopo A vs B em `design.md` §1.5. Aguardando decisão do usuário.
+→ See the A vs B scope fork in `design.md` §1.5. Awaiting the user's decision.

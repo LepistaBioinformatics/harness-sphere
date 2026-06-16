@@ -1,64 +1,64 @@
-# STATE — memória do projeto HarnessSphere
+# STATE — HarnessSphere project memory
 
-## Estado atual (2026-06-15)
-- **PLAN aprovado.** Arquitetura **hexagonal (ports & adapters)**, escopo **Opção A**
-  (sidecar collector unificado), conteúdo GenAI **opt-in**, crash crítico por **threshold**.
-- **Sprint 1 de scaffolding: CONCLUÍDO e verificado.** Workspace compila (`cargo build`
-  limpo), testes do domínio passam (4/4), binário roda end-to-end (host+self → stdout,
-  shutdown gracioso via SIGINT).
+## Current status (2026-06-15)
+- **PLAN approved.** **Hexagonal architecture (ports & adapters)**, scope **Option A**
+  (unified sidecar collector), GenAI content **opt-in**, critical crash by **threshold**.
+- **Scaffolding Sprint 1: COMPLETED and verified.** Workspace compiles (`cargo build`
+  clean), domain tests pass (4/4), the binary runs end-to-end (host+self → stdout,
+  graceful shutdown via SIGINT).
 
-## Estrutura entregue
-- `crates/domain` — modelo de sinal canônico, ports, políticas (breaker + criticality). Puro.
-- `crates/runtime` — supervisor (task por source, 3 camadas de contenção, breaker, dreno+batch).
+## Delivered structure
+- `crates/domain` — canonical signal model, ports, policies (breaker + criticality). Pure.
+- `crates/runtime` — supervisor (task per source, 3 containment layers, breaker, drain+batch).
 - `crates/collectors` — `HostCollector` + `SelfCollector` (Critical).
-- `crates/export` — `StdoutExporter` (default); `OtlpExporter` atrás da feature `otlp` (a fazer).
-- `harnesssphere` (bin) — composition root + config TOML/env.
+- `crates/export` — `StdoutExporter` (default); `OtlpExporter` behind the `otlp` feature (to do).
+- `harnesssphere` (bin) — composition root + TOML/env config.
 
-## Decisões técnicas registradas
+## Recorded technical decisions
 - **Toolchain: Rust stable 1.96.0**, **edition 2024**, MSRV `rust-version = 1.95`
-  (`rust-toolchain.toml` fixa `stable`). `sysinfo` na atual **0.39**.
-- **`panic = "unwind"` mantido no release** (não `abort`): a contenção de panic
-  (`catch_unwind`, FR-RES-03) depende disso. Tamanho vem de `opt-level="z"`+`lto`+`strip`.
-- Domínio sem dependência de `opentelemetry*` (pré-1.0, churn) — SDK confinado em `export/`.
+  (`rust-toolchain.toml` pins `stable`). `sysinfo` at the current **0.39**.
+- **`panic = "unwind"` kept in release** (not `abort`): panic containment
+  (`catch_unwind`, FR-RES-03) depends on it. Size comes from `opt-level="z"`+`lto`+`strip`.
+- Domain with no dependency on `opentelemetry*` (pre-1.0, churn) — SDK confined to `export/`.
 
-## Lacunas conhecidas da resiliência (deferred — design §2 promete, sprint 1 não entrega)
-- **3ª camada de contenção (observação de JoinHandle):** o supervisor guarda os handles
-  mas não os observa para re-spawn (Optional) / escalar (Critical). Hoje só há 2 camadas
-  (Result + catch_unwind no tick).
-- **Panic dentro de `probe()` não é contido** (sem catch_unwind): mata a task daquele
-  source silenciosamente. Cobrir junto com a 3ª camada.
-- **Fatal usa `drain.abort()`** (descarta buffer) em vez de *flush → exit* prometido em
-  §2.2. Implementar flush ordenado do exporter antes do `exit(1)`.
-- **Drop-newest** no `ChannelSink` (não drop-oldest) — ver design §2.3.
+## Known resilience gaps (deferred — design §2 promises, sprint 1 does not deliver)
+- **3rd containment layer (JoinHandle observation):** the supervisor holds the handles
+  but does not observe them to re-spawn (Optional) / escalate (Critical). Today there are
+  only 2 layers (Result + catch_unwind in the tick).
+- **Panic inside `probe()` is not contained** (no catch_unwind): it kills the task of that
+  source silently. To be covered together with the 3rd layer.
+- **Fatal uses `drain.abort()`** (discards the buffer) instead of the *flush → exit* promised
+  in §2.2. Implement an ordered flush of the exporter before `exit(1)`.
+- **Drop-newest** in the `ChannelSink` (not drop-oldest) — see design §2.3.
 
-Verificado no sprint 1: caminho fatal Critical end-to-end (`tests/crash.rs`) **e** que
-Optional falhando não derruba; happy-path host+self→stdout; testes de política.
+Verified in sprint 1: the Critical fatal path end-to-end (`tests/crash.rs`) **and** that a
+failing Optional does not bring it down; happy-path host+self→stdout; policy tests.
 
-## Próximos passos (backlog)
-1. ~~**Adapter OTLP**~~ ✅ **FEITO** (branch `feat/otlp-exporter`): `OtlpExporter`
-   (feature `otlp`) — OTLP/gRPC via SDK 0.32, `SdkMeterProvider` + instrumentos síncronos,
-   Resource (`service.name`, `host.name`). `PeriodicReader` com intervalo configurável
-   (`metric_export_interval_secs`). Wiring no bin via `exporter = "otlp"` +
+## Next steps (backlog)
+1. ~~**OTLP adapter**~~ ✅ **DONE** (branch `feat/otlp-exporter`): `OtlpExporter`
+   (`otlp` feature) — OTLP/gRPC via SDK 0.32, `SdkMeterProvider` + synchronous instruments,
+   Resource (`service.name`, `host.name`). `PeriodicReader` with configurable interval
+   (`metric_export_interval_secs`). Wiring in the bin via `exporter = "otlp"` +
    `OTEL_EXPORTER_OTLP_ENDPOINT`.
-   **Verificado (caminho de sucesso observado):** contra um `otelcol-contrib` real
-   (receiver OTLP→exporter debug), o collector recebeu `system.cpu.utilization`,
-   `system.memory.usage` (3 data points), `process.memory.usage`, etc. — 8 métricas /
-   10 data points, com Resource `service.name=harnesssphere` e `host.name`. Também
-   verificado que **contra endpoint morto não derruba** o watcher.
-   - **Escopo v1: só métricas** (host/self não emitem log/span). Logs/Spans OTLP quando
-     ingest/harness os produzir.
-   - **Modelagem:** valores absolutos amostrados (Gauge **e** UpDownCounter) → **Gauge**
-     no OTLP. TODO: migrar métricas aditivas (ex.: `system.memory.usage` por estado) para
-     instrumentos **observáveis** para preservar a soma da semconv.
-   - Cadência de push = reader periódico do SDK (default ~60s), desacoplada do batch do
-     drain. Avaliar `PeriodicReader` com intervalo explícito.
-2. **Ingest plane** (`crates/ingest`): receiver OTLP local (gRPC :4317/HTTP :4318) +
-   Enricher (injeta `host.*`/`container.id`, normaliza Hermes `llm.token_count.*`→`gen_ai.*`)
-   + guarda anti-loop + redação de conteúdo (default on).
-3. Coletores Optional: `container` (cgroup v2), `prometheus` (scrape do OpenClaw
+   **Verified (observed success path):** against a real `otelcol-contrib` (OTLP receiver→debug
+   exporter), the collector received `system.cpu.utilization`,
+   `system.memory.usage` (3 data points), `process.memory.usage`, etc. — 8 metrics /
+   10 data points, with Resource `service.name=harnesssphere` and `host.name`. Also
+   verified that **against a dead endpoint it does not bring down** the watcher.
+   - **v1 scope: metrics only** (host/self do not emit log/span). OTLP Logs/Spans when
+     ingest/harness produces them.
+   - **Modeling:** sampled absolute values (Gauge **and** UpDownCounter) → **Gauge**
+     in OTLP. TODO: migrate additive metrics (e.g., `system.memory.usage` by state) to
+     **observable** instruments to preserve the semconv sum.
+   - Push cadence = the SDK's periodic reader (default ~60s), decoupled from the drain
+     batch. Evaluate `PeriodicReader` with an explicit interval.
+2. **Ingest plane** (`crates/ingest`): local OTLP receiver (gRPC :4317/HTTP :4318) +
+   Enricher (injects `host.*`/`container.id`, normalizes Hermes `llm.token_count.*`→`gen_ai.*`)
+   + anti-loop guard + content redaction (default on).
+3. Optional collectors: `container` (cgroup v2), `prometheus` (scrape of OpenClaw
    `/api/diagnostics/prometheus`).
-4. Pipeline de release: `cross` + `cargo-zigbuild` para os 6 targets.
+4. Release pipeline: `cross` + `cargo-zigbuild` for the 6 targets.
 
-## Pendências de produto
-- PicoClaw: confirmar mecanismo de exposição (doc retornou 403). Optional/fallback.
-- Confirmar formatos exatos emitidos por OpenClaw/Hermes contra capturas reais de OTLP.
+## Product open items
+- PicoClaw: confirm the exposure mechanism (doc returned 403). Optional/fallback.
+- Confirm the exact formats emitted by OpenClaw/Hermes against real OTLP captures.

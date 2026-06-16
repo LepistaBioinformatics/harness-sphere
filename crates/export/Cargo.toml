@@ -7,7 +7,7 @@ license.workspace = true
 
 [features]
 default = []
-# Adapter OTLP — confina as crates `opentelemetry*` (pré-1.0) aqui.
+# OTLP adapter — confines the `opentelemetry*` crates (pre-1.0) here.
 otlp = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp"]
 
 [dependencies]

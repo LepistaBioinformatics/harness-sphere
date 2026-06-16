@@ -1,4 +1,4 @@
-//! Configuração via TOML + override por env. Sprint 1: intervalos e seleção de exporter.
+//! Configuration via TOML + env override. Sprint 1: intervals and exporter selection.
 
 use serde::Deserialize;
 use std::time::Duration;
@@ -6,19 +6,19 @@ use std::time::Duration;
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// Intervalo de coleta do host, em segundos.
+    /// Host collection interval, in seconds.
     pub host_interval_secs: u64,
-    /// Intervalo de coleta do próprio watcher, em segundos.
+    /// Watcher self-collection interval, in seconds.
     pub self_interval_secs: u64,
-    /// Falhas consecutivas a partir das quais um source Critical é fatal.
+    /// Consecutive failures at which a Critical source becomes fatal.
     pub critical_threshold: u32,
-    /// Exporter ativo: "stdout" (default) ou "otlp" (feature `otlp`).
+    /// Active exporter: "stdout" (default) or "otlp" (feature `otlp`).
     pub exporter: String,
-    /// Endpoint OTLP/gRPC (usado quando exporter = "otlp").
+    /// OTLP/gRPC endpoint (used when exporter = "otlp").
     pub otlp_endpoint: String,
-    /// `service.name` no Resource OTel.
+    /// `service.name` in the OTel Resource.
     pub service_name: String,
-    /// Cadência (segundos) do reader periódico de métricas OTLP.
+    /// Cadence (seconds) of the periodic OTLP metrics reader.
     pub metric_export_interval_secs: u64,
 }
 
@@ -41,7 +41,7 @@ impl Config {
         let mut cfg = match path {
             Some(p) => {
                 let raw = std::fs::read_to_string(p)
-                    .map_err(|e| anyhow::anyhow!("falha ao ler config {p}: {e}"))?;
+                    .map_err(|e| anyhow::anyhow!("failed to read config {p}: {e}"))?;
                 toml::from_str(&raw)?
             }
             None => Config::default(),

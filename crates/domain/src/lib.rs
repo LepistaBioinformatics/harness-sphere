@@ -1,7 +1,7 @@
-//! `harnesssphere-domain` — o hexágono.
+//! `harnesssphere-domain` — the hexagon.
 //!
-//! Modelo de sinal canônico, ports (interfaces) e políticas puras. **Zero IO, zero
-//! dependência de OpenTelemetry.** Toda lógica testável vive aqui.
+//! Canonical signal model, ports (interfaces) and pure policies. **Zero IO, zero
+//! OpenTelemetry dependency.** All testable logic lives here.
 
 pub mod policy;
 pub mod ports;

@@ -1,7 +1,7 @@
 //! `harnesssphere` — composition root.
 //!
-//! Faz o *wiring* dos ports↔adapters e roda o supervisor. Único lugar que conhece todos
-//! os adapters concretos. Sprint 1: coletores Critical (host, self) → exporter stdout.
+//! Wires the ports↔adapters together and runs the supervisor. The only place that knows
+//! all the concrete adapters. Sprint 1: Critical collectors (host, self) → stdout exporter.
 
 mod config;
 
@@ -26,29 +26,29 @@ async fn main() {
     let cfg = match Config::load(path.as_deref()) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("erro de configuração: {e}");
+            eprintln!("configuration error: {e}");
             std::process::exit(2);
         }
     };
 
-    // --- Composition root: monta os sources (ports) com seus adapters concretos ---
+    // --- Composition root: assembles the sources (ports) with their concrete adapters ---
     let mut sources: Vec<Box<dyn SignalSource>> = Vec::new();
     sources.push(Box::new(HostCollector::new(cfg.host_interval()))); // Critical
     match SelfCollector::new(cfg.self_interval()) {
         Ok(s) => sources.push(Box::new(s)), // Critical
         Err(e) => {
-            // O coletor do próprio watcher é obrigatório: sem ele, não há razão para subir.
-            eprintln!("falha fatal ao iniciar coletor 'self': {e}");
+            // The watcher's own collector is mandatory: without it, there's no reason to start.
+            eprintln!("fatal failure starting 'self' collector: {e}");
             std::process::exit(1);
         }
     }
 
-    // --- Adapter de saída (driven) ---
+    // --- Output adapter (driven) ---
     let exporter: Arc<dyn SignalExporter> = match cfg.exporter.as_str() {
         "stdout" => Arc::new(StdoutExporter::new()),
         "otlp" => build_otlp_exporter(&cfg),
         other => {
-            eprintln!("exporter '{other}' desconhecido (use 'stdout' ou 'otlp')");
+            eprintln!("unknown exporter '{other}' (use 'stdout' or 'otlp')");
             std::process::exit(2);
         }
     };
@@ -61,17 +61,17 @@ async fn main() {
     tracing::info!(
         sources = sources.len(),
         exporter = %cfg.exporter,
-        "HarnessSphere iniciando"
+        "HarnessSphere starting"
     );
 
     let supervisor = Supervisor::new(rt_cfg, sources, exporter);
     match supervisor.run().await {
         Ok(()) => {
-            tracing::info!("encerrado graciosamente");
+            tracing::info!("shut down gracefully");
         }
         Err(fatal) => {
-            tracing::error!(source = fatal.source, reason = %fatal.reason, "FATAL crítico");
-            eprintln!("FATAL: coletor crítico '{}' caiu: {}", fatal.source, fatal.reason);
+            tracing::error!(source = fatal.source, reason = %fatal.reason, "critical FATAL");
+            eprintln!("FATAL: critical collector '{}' went down: {}", fatal.source, fatal.reason);
             std::process::exit(1);
         }
     }
@@ -84,11 +84,11 @@ fn build_otlp_exporter(cfg: &Config) -> Arc<dyn SignalExporter> {
     let interval = std::time::Duration::from_secs(cfg.metric_export_interval_secs.max(1));
     match OtlpExporter::new(&cfg.otlp_endpoint, &cfg.service_name, &host, interval) {
         Ok(e) => {
-            tracing::info!(endpoint = %cfg.otlp_endpoint, "exporter OTLP/gRPC ativo");
+            tracing::info!(endpoint = %cfg.otlp_endpoint, "OTLP/gRPC exporter active");
             Arc::new(e)
         }
         Err(e) => {
-            eprintln!("falha ao iniciar exporter OTLP: {e}");
+            eprintln!("failed to start OTLP exporter: {e}");
             std::process::exit(2);
         }
     }
@@ -97,7 +97,7 @@ fn build_otlp_exporter(cfg: &Config) -> Arc<dyn SignalExporter> {
 #[cfg(not(feature = "otlp"))]
 fn build_otlp_exporter(_cfg: &Config) -> Arc<dyn SignalExporter> {
     eprintln!(
-        "exporter 'otlp' indisponível: rebuilde com `--features otlp` \
+        "exporter 'otlp' unavailable: rebuild with `--features otlp` \
          (cargo run -p harnesssphere --features otlp)"
     );
     std::process::exit(2);

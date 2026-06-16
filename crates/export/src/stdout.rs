@@ -1,4 +1,4 @@
-//! Exporter de debug: serializa o sinal canônico em linha legível no stdout.
+//! Debug exporter: serializes the canonical signal as a readable line on stdout.
 
 use async_trait::async_trait;
 use harnesssphere_domain::{ExportError, Signal, SignalExporter};

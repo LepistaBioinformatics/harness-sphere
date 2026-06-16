@@ -1,5 +1,5 @@
-//! Políticas puras do domínio: circuit breaker e decisão de criticidade.
-//! Sem IO — totalmente testável.
+//! Pure domain policies: circuit breaker and criticality decision.
+//! No IO — fully testable.
 
 use crate::ports::Criticality;
 use std::time::Duration;
@@ -10,12 +10,12 @@ pub enum BreakerState {
     Open,
 }
 
-/// Circuit breaker com backoff exponencial por source.
+/// Circuit breaker with per-source exponential backoff.
 #[derive(Debug, Clone)]
 pub struct CircuitBreaker {
     state: BreakerState,
     consecutive_failures: u32,
-    /// Falhas consecutivas a partir das quais um source Critical vira fatal.
+    /// Consecutive failures at which a Critical source becomes fatal.
     crit_threshold: u32,
     base_backoff: Duration,
     max_backoff: Duration,
@@ -54,12 +54,12 @@ impl CircuitBreaker {
         self.state = BreakerState::Open;
     }
 
-    /// Abre o breaker sem contar como falha (ex.: alvo NotApplicable/Unavailable no boot).
+    /// Opens the breaker without counting as a failure (e.g. NotApplicable/Unavailable target at boot).
     pub fn trip_open(&mut self) {
         self.state = BreakerState::Open;
     }
 
-    /// Backoff atual = base * 2^(falhas-1), saturado em max_backoff.
+    /// Current backoff = base * 2^(failures-1), saturated at max_backoff.
     pub fn backoff(&self) -> Duration {
         if self.consecutive_failures == 0 {
             return self.base_backoff;
@@ -72,17 +72,17 @@ impl CircuitBreaker {
     }
 }
 
-/// Ação que o supervisor deve tomar após uma falha, dada a criticidade.
+/// Action the supervisor must take after a failure, given the criticality.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FailureAction {
-    /// Loga e continua (Optional, ou Critical transitório).
+    /// Log and continue (Optional, or transient Critical).
     Degrade,
-    /// Falha crítica persistente — encerra o processo (exit != 0).
+    /// Persistent critical failure — terminate the process (exit != 0).
     Fatal,
 }
 
-/// Regra central crítico-vs-opcional. Critical só é fatal acima do threshold
-/// (tolera transitórios); Optional nunca derruba o processo.
+/// Central critical-vs-optional rule. Critical is only fatal above the threshold
+/// (tolerates transients); Optional never brings the process down.
 pub fn classify_failure(criticality: Criticality, breaker: &CircuitBreaker) -> FailureAction {
     match criticality {
         Criticality::Optional => FailureAction::Degrade,

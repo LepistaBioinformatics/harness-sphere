@@ -1,5 +1,5 @@
-//! Coletor Self (Critical) — auto-observabilidade do próprio HarnessSphere.
-//! Mapeia para `process.*`.
+//! Self collector (Critical) — HarnessSphere's own self-observability.
+//! Maps to `process.*`.
 
 use async_trait::async_trait;
 use harnesssphere_domain::{
@@ -17,7 +17,7 @@ pub struct SelfCollector {
 
 impl SelfCollector {
     pub fn new(interval: Duration) -> Result<Self, String> {
-        let pid = get_current_pid().map_err(|e| format!("pid atual indisponível: {e}"))?;
+        let pid = get_current_pid().map_err(|e| format!("current pid unavailable: {e}"))?;
         Ok(SelfCollector {
             descriptor: SourceDescriptor {
                 name: "self",
@@ -43,7 +43,7 @@ impl SignalSource for SelfCollector {
         if self.sys.process(self.pid).is_some() {
             ProbeResult::Ready
         } else {
-            ProbeResult::Fatal("não foi possível inspecionar o próprio processo".into())
+            ProbeResult::Fatal("could not inspect own process".into())
         }
     }
 
@@ -53,7 +53,7 @@ impl SignalSource for SelfCollector {
         let proc = self
             .sys
             .process(self.pid)
-            .ok_or_else(|| CollectError::Failed("processo próprio sumiu".into()))?;
+            .ok_or_else(|| CollectError::Failed("own process disappeared".into()))?;
 
         let cpu_frac = (proc.cpu_usage() as f64) / 100.0;
         sink.emit(

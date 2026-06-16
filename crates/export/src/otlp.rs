@@ -1,15 +1,15 @@
-//! Adapter de saída OTLP (feature `otlp`). Único lugar que depende do SDK
-//! `opentelemetry*` (pré-1.0) — isola o churn do domínio.
+//! OTLP output adapter (feature `otlp`). The only place that depends on the
+//! `opentelemetry*` SDK (pre-1.0) — isolates the churn from the domain.
 //!
-//! Escopo v1: caminho de **métricas** via `SdkMeterProvider` + instrumentos síncronos
-//! (host/self só emitem métricas). Logs/Spans OTLP chegam quando o ingest/harness os
-//! produzir.
+//! v1 scope: **metrics** path via `SdkMeterProvider` + synchronous instruments
+//! (host/self only emit metrics). OTLP logs/spans arrive once the ingest/harness
+//! produces them.
 //!
-//! Decisão de modelagem: as fontes emitem **valores absolutos amostrados**. Mapear um
-//! `UpDownCounter` absoluto para `add()` somaria — errado. Então valores absolutos
-//! (Gauge e UpDownCounter) viram **Gauge** no OTLP. TODO: migrar métricas aditivas
-//! (ex.: `system.memory.usage` por estado) para instrumentos **observáveis** para
-//! preservar a semântica de soma da semconv.
+//! Modeling decision: the sources emit **sampled absolute values**. Mapping an absolute
+//! `UpDownCounter` to `add()` would sum them — wrong. So absolute values (Gauge and
+//! UpDownCounter) become a **Gauge** in OTLP. TODO: migrate additive metrics
+//! (e.g. `system.memory.usage` by state) to **observable** instruments to preserve the
+//! semconv's summation semantics.
 
 use async_trait::async_trait;
 use harnesssphere_domain::{
@@ -33,8 +33,8 @@ pub struct OtlpExporter {
 }
 
 impl OtlpExporter {
-    /// Cria o provider OTLP/gRPC (tonic). `endpoint` ex.: `http://localhost:4317`.
-    /// `export_interval` controla a cadência do reader periódico do SDK.
+    /// Creates the OTLP/gRPC provider (tonic). `endpoint` e.g. `http://localhost:4317`.
+    /// `export_interval` controls the cadence of the SDK's periodic reader.
     pub fn new(
         endpoint: &str,
         service_name: &str,
@@ -130,7 +130,7 @@ impl SignalExporter for OtlpExporter {
                 Signal::Metric(m) => {
                     let attrs = to_keyvalues(&m.attributes);
                     match m.kind {
-                        // Valores absolutos amostrados → Gauge (ver nota no topo).
+                        // Sampled absolute values → Gauge (see note at the top).
                         MetricKind::Gauge | MetricKind::UpDownCounter => {
                             self.record_gauge(&m.name, &m.unit, m.value, &attrs)
                         }
@@ -140,9 +140,9 @@ impl SignalExporter for OtlpExporter {
                         }
                     }
                 }
-                // v1: ainda sem caminho OTLP de logs/spans (host/self não os emitem).
+                // v1: no OTLP path for logs/spans yet (host/self don't emit them).
                 Signal::Log(_) | Signal::Span(_) => {
-                    tracing::debug!("sinal log/span ignorado pelo OtlpExporter v1 (só métricas)");
+                    tracing::debug!("log/span signal ignored by OtlpExporter v1 (metrics only)");
                 }
             }
         }
@@ -151,7 +151,7 @@ impl SignalExporter for OtlpExporter {
 
     async fn shutdown(&self) {
         if let Err(e) = self.provider.shutdown() {
-            tracing::warn!(error = %e, "falha no shutdown/flush do OtlpExporter");
+            tracing::warn!(error = %e, "OtlpExporter shutdown/flush failed");
         }
     }
 }

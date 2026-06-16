@@ -1,12 +1,12 @@
-//! Modelo de sinal canônico do HarnessSphere.
+//! HarnessSphere canonical signal model.
 //!
-//! Representação neutra de telemetria — independente de OpenTelemetry. O adapter de
-//! export (`harnesssphere-export`) é o único lugar que traduz isto para OTLP, isolando
-//! o domínio do churn das crates `opentelemetry*` (pré-1.0).
+//! Neutral telemetry representation — independent of OpenTelemetry. The export adapter
+//! (`harnesssphere-export`) is the only place that translates this to OTLP, isolating
+//! the domain from the churn of the `opentelemetry*` crates (pre-1.0).
 
 use std::time::SystemTime;
 
-/// Camada monitorada (origem lógica do sinal).
+/// Monitored layer (logical origin of the signal).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Layer {
     Host,
@@ -32,7 +32,7 @@ impl Layer {
     }
 }
 
-/// Valor de atributo (subset OTel-compatível).
+/// Attribute value (OTel-compatible subset).
 #[derive(Debug, Clone, PartialEq)]
 pub enum AttrValue {
     Str(String),
@@ -69,7 +69,7 @@ impl From<bool> for AttrValue {
 
 pub type Attributes = Vec<(String, AttrValue)>;
 
-/// Tipo de instrumento métrico.
+/// Metric instrument type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MetricKind {
     Gauge,
@@ -129,7 +129,7 @@ pub struct Span {
     pub attributes: Attributes,
 }
 
-/// Sinal canônico — unidade que flui dos sources/receivers até o exporter.
+/// Canonical signal — the unit that flows from sources/receivers to the exporter.
 #[derive(Debug, Clone)]
 pub enum Signal {
     Metric(Metric),
@@ -138,7 +138,7 @@ pub enum Signal {
 }
 
 impl Signal {
-    /// Anexa `(key, value)` aos atributos do sinal (usado pelo Enricher).
+    /// Appends `(key, value)` to the signal's attributes (used by the Enricher).
     pub fn push_attr(&mut self, key: impl Into<String>, value: impl Into<AttrValue>) {
         let attrs = match self {
             Signal::Metric(m) => &mut m.attributes,
@@ -149,7 +149,7 @@ impl Signal {
     }
 }
 
-/// Construtores ergonômicos para os adapters de fonte.
+/// Ergonomic constructors for the source adapters.
 impl Metric {
     pub fn now(name: impl Into<String>, kind: MetricKind, value: f64) -> Self {
         Metric {

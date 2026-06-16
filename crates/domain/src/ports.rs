@@ -1,17 +1,17 @@
-//! Ports do hexágono — interfaces que o domínio define e os adapters implementam.
+//! Hexagon ports — interfaces the domain defines and the adapters implement.
 
 use crate::signal::{Layer, Signal};
 use std::time::Duration;
 use thiserror::Error;
 
-/// Criticidade de um source. Critical (Host/Self) falha persistente → processo encerra.
+/// Criticality of a source. Critical (Host/Self) persistent failure → process exits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Criticality {
     Critical,
     Optional,
 }
 
-/// Metadados estáticos de um source.
+/// Static metadata for a source.
 #[derive(Debug, Clone)]
 pub struct SourceDescriptor {
     pub name: &'static str,
@@ -20,54 +20,54 @@ pub struct SourceDescriptor {
     pub default_interval: Duration,
 }
 
-/// Resultado do probe inicial de disponibilidade do alvo.
+/// Result of the initial target availability probe.
 #[derive(Debug)]
 pub enum ProbeResult {
-    /// Alvo presente; coleta habilitada.
+    /// Target present; collection enabled.
     Ready,
-    /// Alvo ausente/sem resposta (Optional → degrade; não é fatal).
+    /// Target absent/unresponsive (Optional → degrade; not fatal).
     Unavailable(String),
-    /// Não se aplica a este host (ex.: sem container).
+    /// Does not apply to this host (e.g. no container).
     NotApplicable,
-    /// Só Critical pode retornar — aborta o boot.
+    /// Only Critical may return this — aborts boot.
     Fatal(String),
 }
 
 #[derive(Debug, Error)]
 pub enum CollectError {
-    #[error("alvo indisponível: {0}")]
+    #[error("target unavailable: {0}")]
     Unavailable(String),
-    #[error("falha de coleta: {0}")]
+    #[error("collection failed: {0}")]
     Failed(String),
 }
 
 #[derive(Debug, Error)]
 pub enum ExportError {
-    #[error("falha de export: {0}")]
+    #[error("export failed: {0}")]
     Failed(String),
 }
 
-/// Canal de saída dos sources para o pipeline do domínio.
+/// Output channel from the sources to the domain pipeline.
 ///
-/// Fire-and-forget e não-async: mantém o domínio livre de `tokio`. O adapter de runtime
-/// fornece a implementação (canal bounded com política de descarte).
+/// Fire-and-forget and non-async: keeps the domain free of `tokio`. The runtime adapter
+/// provides the implementation (bounded channel with a drop policy).
 pub trait SignalSink: Send + Sync {
     fn emit(&self, signal: Signal);
 }
 
-/// Port driven: fonte de telemetria por *pull* (host, cgroup, scrape).
+/// Driven port: *pull*-based telemetry source (host, cgroup, scrape).
 #[async_trait::async_trait]
 pub trait SignalSource: Send + Sync + 'static {
     fn descriptor(&self) -> &SourceDescriptor;
 
-    /// Detecta disponibilidade do alvo (uma vez, no boot).
+    /// Detects target availability (once, at boot).
     async fn probe(&mut self) -> ProbeResult;
 
-    /// Um ciclo de coleta; emite sinais via `sink`. Erro é isolado pelo runtime.
+    /// One collection cycle; emits signals via `sink`. Errors are isolated by the runtime.
     async fn collect(&mut self, sink: &dyn SignalSink) -> Result<(), CollectError>;
 }
 
-/// Port driven: destino dos sinais (OTLP, stdout, ...).
+/// Driven port: signal destination (OTLP, stdout, ...).
 #[async_trait::async_trait]
 pub trait SignalExporter: Send + Sync + 'static {
     async fn export(&self, batch: Vec<Signal>) -> Result<(), ExportError>;
