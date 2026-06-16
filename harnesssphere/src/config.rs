@@ -18,6 +18,8 @@ pub struct Config {
     pub otlp_endpoint: String,
     /// `service.name` no Resource OTel.
     pub service_name: String,
+    /// Cadência (segundos) do reader periódico de métricas OTLP.
+    pub metric_export_interval_secs: u64,
 }
 
 impl Default for Config {
@@ -29,6 +31,7 @@ impl Default for Config {
             exporter: "stdout".to_owned(),
             otlp_endpoint: "http://localhost:4317".to_owned(),
             service_name: "harnesssphere".to_owned(),
+            metric_export_interval_secs: 15,
         }
     }
 }

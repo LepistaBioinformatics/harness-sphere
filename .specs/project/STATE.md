@@ -37,9 +37,14 @@ Optional falhando não derruba; happy-path host+self→stdout; testes de políti
 ## Próximos passos (backlog)
 1. ~~**Adapter OTLP**~~ ✅ **FEITO** (branch `feat/otlp-exporter`): `OtlpExporter`
    (feature `otlp`) — OTLP/gRPC via SDK 0.32, `SdkMeterProvider` + instrumentos síncronos,
-   Resource (`service.name`, `host.name`). Wiring no bin via `exporter = "otlp"` +
-   `OTEL_EXPORTER_OTLP_ENDPOINT`. Verificado: contra endpoint morto **não derruba** o
-   watcher.
+   Resource (`service.name`, `host.name`). `PeriodicReader` com intervalo configurável
+   (`metric_export_interval_secs`). Wiring no bin via `exporter = "otlp"` +
+   `OTEL_EXPORTER_OTLP_ENDPOINT`.
+   **Verificado (caminho de sucesso observado):** contra um `otelcol-contrib` real
+   (receiver OTLP→exporter debug), o collector recebeu `system.cpu.utilization`,
+   `system.memory.usage` (3 data points), `process.memory.usage`, etc. — 8 métricas /
+   10 data points, com Resource `service.name=harnesssphere` e `host.name`. Também
+   verificado que **contra endpoint morto não derruba** o watcher.
    - **Escopo v1: só métricas** (host/self não emitem log/span). Logs/Spans OTLP quando
      ingest/harness os produzir.
    - **Modelagem:** valores absolutos amostrados (Gauge **e** UpDownCounter) → **Gauge**

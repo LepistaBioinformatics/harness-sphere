@@ -81,7 +81,8 @@ async fn main() {
 fn build_otlp_exporter(cfg: &Config) -> Arc<dyn SignalExporter> {
     use harnesssphere_export::OtlpExporter;
     let host = hostname();
-    match OtlpExporter::new(&cfg.otlp_endpoint, &cfg.service_name, &host) {
+    let interval = std::time::Duration::from_secs(cfg.metric_export_interval_secs.max(1));
+    match OtlpExporter::new(&cfg.otlp_endpoint, &cfg.service_name, &host, interval) {
         Ok(e) => {
             tracing::info!(endpoint = %cfg.otlp_endpoint, "exporter OTLP/gRPC ativo");
             Arc::new(e)

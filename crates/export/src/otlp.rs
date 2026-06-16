@@ -18,7 +18,7 @@ use harnesssphere_domain::{
 use opentelemetry::metrics::{Counter, Gauge, Histogram, Meter, MeterProvider as _};
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::{MetricExporter, WithExportConfig};
-use opentelemetry_sdk::metrics::SdkMeterProvider;
+use opentelemetry_sdk::metrics::{PeriodicReader, SdkMeterProvider};
 use opentelemetry_sdk::Resource;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -34,7 +34,13 @@ pub struct OtlpExporter {
 
 impl OtlpExporter {
     /// Cria o provider OTLP/gRPC (tonic). `endpoint` ex.: `http://localhost:4317`.
-    pub fn new(endpoint: &str, service_name: &str, host_name: &str) -> Result<Self, ExportError> {
+    /// `export_interval` controla a cadência do reader periódico do SDK.
+    pub fn new(
+        endpoint: &str,
+        service_name: &str,
+        host_name: &str,
+        export_interval: Duration,
+    ) -> Result<Self, ExportError> {
         let metric_exporter = MetricExporter::builder()
             .with_tonic()
             .with_endpoint(endpoint)
@@ -47,9 +53,13 @@ impl OtlpExporter {
             .with_attribute(KeyValue::new("host.name", host_name.to_owned()))
             .build();
 
+        let reader = PeriodicReader::builder(metric_exporter)
+            .with_interval(export_interval)
+            .build();
+
         let provider = SdkMeterProvider::builder()
             .with_resource(resource)
-            .with_periodic_exporter(metric_exporter)
+            .with_reader(reader)
             .build();
 
         let meter = provider.meter("harnesssphere");
