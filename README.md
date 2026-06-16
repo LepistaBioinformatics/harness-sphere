@@ -175,6 +175,36 @@ and `os.type`.
 
 ---
 
+## How each signal is collected
+
+HarnessSphere gathers data two ways: it **pulls** (reaches out and reads/scrapes a
+target) and it **receives** (lets a target push to it). Here's exactly where every layer's
+data comes from.
+
+| Layer | Mechanism | How it actually works | Status |
+|---|---|---|---|
+| **Host** | Pull — `sysinfo` crate | On each tick the host collector refreshes [`sysinfo`](https://crates.io/crates/sysinfo), which reads the OS natively (`/proc` and `/sys` on Linux, equivalent APIs on macOS). CPU comes from the aggregate utilization, memory from total/used/free/available, swap from the paging counters. | ✅ |
+| **Watcher (Self)** | Pull — `sysinfo` process API | The watcher looks up *its own* PID (`get_current_pid`) and reads that process's CPU and memory (RSS, virtual) — pure self-observation, no privileges needed. | ✅ |
+| **Container** | Pull — **cgroup v2**, read directly | Reads the kernel's cgroup v2 files (`memory.current`, `memory.max`, `cpu.stat`, `io.stat`, `memory.events`) straight from the filesystem. No Docker socket, no runtime API, no extra permissions. | 🟡 |
+| **Gateway** | Pull — Prometheus scrape + active probe | Scrapes the gateway's Prometheus endpoint (e.g. OpenClaw's `/api/diagnostics/prometheus`) and runs a lightweight health probe for reachability/latency. | 🟡 |
+| **Harness (AI)** | **Push — OTLP ingest** (+ Prometheus) | This data is *internal to the app* — a passive watcher can't see tokens or search-index hits. So OpenClaw/Hermes **push OTLP** to HarnessSphere's local receiver; it converts each metric to the canonical model, **preserves the origin identity** (`service.name`, `gen_ai.provider/model` from the OTLP Resource) and **enriches it with host context** (`host.name`) before forwarding. OpenClaw's `openclaw.*` Prometheus metrics can also be scraped. | 🟡 ingest ✅ |
+| **Tools** | **Push — OTLP ingest** | Arrives in the same push stream as the harness (e.g. OpenClaw's `openclaw.tool.execution.*`, Hermes' `tool.{name}` spans); converted and enriched like everything else. | 🟡 |
+| **API Calls** | **Push — OTLP ingest** (+ scrape) | HTTP/gRPC metrics and spans the components emit, received over OTLP and enriched. | 🟡 |
+
+**The journey of one signal.** A *pulled* signal (host/self) is read by a collector,
+turned into a canonical `Metric`/`Log`/`Span`, and dropped onto an internal channel. A
+*pushed* signal arrives at the OTLP receiver, is converted from OTLP to the same canonical
+shape, **enriched** with host context, and dropped onto the same channel. From there a
+single batching drain hands everything to the active exporter (stdout, or OTLP to your
+backend). Because both paths converge on one model and one pipeline, AI telemetry and host
+telemetry end up correlated — same host, same timeline.
+
+> **Pull cadence** is configurable per collector (`host_interval_secs`,
+> `self_interval_secs`). **Push** is driven by whatever the components send; the OTLP
+> *export* to your backend ships on `metric_export_interval_secs`.
+
+---
+
 ## It never takes itself down
 
 HarnessSphere is a *watcher*, and a watcher that crashes is worse than no watcher at all.
@@ -264,6 +294,13 @@ cargo build --release --features otlp
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
 HARNESSSPHERE_EXPORTER=otlp \
   ./target/release/harnesssphere config.example.toml
+```
+
+**Want to actually see it?** Spin up a local [SigNoz](https://signoz.io) and watch the
+signals land in a dashboard — one command, see [`deploy/signoz/`](deploy/signoz/):
+
+```bash
+docker compose -f deploy/signoz/docker/docker-compose.yaml up -d   # UI at :8080, OTLP at :4317
 ```
 
 ### Configuration
