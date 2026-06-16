@@ -14,6 +14,10 @@ pub struct Config {
     pub critical_threshold: u32,
     /// Exporter ativo: "stdout" (default) ou "otlp" (feature `otlp`).
     pub exporter: String,
+    /// Endpoint OTLP/gRPC (usado quando exporter = "otlp").
+    pub otlp_endpoint: String,
+    /// `service.name` no Resource OTel.
+    pub service_name: String,
 }
 
 impl Default for Config {
@@ -23,6 +27,8 @@ impl Default for Config {
             self_interval_secs: 10,
             critical_threshold: 3,
             exporter: "stdout".to_owned(),
+            otlp_endpoint: "http://localhost:4317".to_owned(),
+            service_name: "harnesssphere".to_owned(),
         }
     }
 }
@@ -39,6 +45,9 @@ impl Config {
         };
         if let Ok(v) = std::env::var("HARNESSSPHERE_EXPORTER") {
             cfg.exporter = v;
+        }
+        if let Ok(v) = std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
+            cfg.otlp_endpoint = v;
         }
         Ok(cfg)
     }

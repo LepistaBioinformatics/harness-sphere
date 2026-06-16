@@ -46,11 +46,9 @@ async fn main() {
     // --- Adapter de saída (driven) ---
     let exporter: Arc<dyn SignalExporter> = match cfg.exporter.as_str() {
         "stdout" => Arc::new(StdoutExporter::new()),
+        "otlp" => build_otlp_exporter(&cfg),
         other => {
-            eprintln!(
-                "exporter '{other}' indisponível neste build (sprint 1 só tem 'stdout'; \
-                 OTLP chega na feature `otlp`)"
-            );
+            eprintln!("exporter '{other}' desconhecido (use 'stdout' ou 'otlp')");
             std::process::exit(2);
         }
     };
@@ -77,4 +75,37 @@ async fn main() {
             std::process::exit(1);
         }
     }
+}
+
+#[cfg(feature = "otlp")]
+fn build_otlp_exporter(cfg: &Config) -> Arc<dyn SignalExporter> {
+    use harnesssphere_export::OtlpExporter;
+    let host = hostname();
+    match OtlpExporter::new(&cfg.otlp_endpoint, &cfg.service_name, &host) {
+        Ok(e) => {
+            tracing::info!(endpoint = %cfg.otlp_endpoint, "exporter OTLP/gRPC ativo");
+            Arc::new(e)
+        }
+        Err(e) => {
+            eprintln!("falha ao iniciar exporter OTLP: {e}");
+            std::process::exit(2);
+        }
+    }
+}
+
+#[cfg(not(feature = "otlp"))]
+fn build_otlp_exporter(_cfg: &Config) -> Arc<dyn SignalExporter> {
+    eprintln!(
+        "exporter 'otlp' indisponível: rebuilde com `--features otlp` \
+         (cargo run -p harnesssphere --features otlp)"
+    );
+    std::process::exit(2);
+}
+
+#[cfg(feature = "otlp")]
+fn hostname() -> String {
+    std::fs::read_to_string("/proc/sys/kernel/hostname")
+        .map(|s| s.trim().to_owned())
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "unknown".to_owned())
 }

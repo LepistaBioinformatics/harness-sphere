@@ -35,8 +35,18 @@ Verificado no sprint 1: caminho fatal Critical end-to-end (`tests/crash.rs`) **e
 Optional falhando não derruba; happy-path host+self→stdout; testes de política.
 
 ## Próximos passos (backlog)
-1. **Adapter OTLP** (`crates/export` feature `otlp`): mapear sinal canônico → opentelemetry
-   0.32 SDK + opentelemetry-otlp; init de Resource (`service.name`, `host.*`).
+1. ~~**Adapter OTLP**~~ ✅ **FEITO** (branch `feat/otlp-exporter`): `OtlpExporter`
+   (feature `otlp`) — OTLP/gRPC via SDK 0.32, `SdkMeterProvider` + instrumentos síncronos,
+   Resource (`service.name`, `host.name`). Wiring no bin via `exporter = "otlp"` +
+   `OTEL_EXPORTER_OTLP_ENDPOINT`. Verificado: contra endpoint morto **não derruba** o
+   watcher.
+   - **Escopo v1: só métricas** (host/self não emitem log/span). Logs/Spans OTLP quando
+     ingest/harness os produzir.
+   - **Modelagem:** valores absolutos amostrados (Gauge **e** UpDownCounter) → **Gauge**
+     no OTLP. TODO: migrar métricas aditivas (ex.: `system.memory.usage` por estado) para
+     instrumentos **observáveis** para preservar a soma da semconv.
+   - Cadência de push = reader periódico do SDK (default ~60s), desacoplada do batch do
+     drain. Avaliar `PeriodicReader` com intervalo explícito.
 2. **Ingest plane** (`crates/ingest`): receiver OTLP local (gRPC :4317/HTTP :4318) +
    Enricher (injeta `host.*`/`container.id`, normaliza Hermes `llm.token_count.*`→`gen_ai.*`)
    + guarda anti-loop + redação de conteúdo (default on).
