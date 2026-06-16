@@ -13,9 +13,8 @@
   ClickHouse held 231 samples of `system.*`/`process.*` (`service.name=harnesssphere`).
   The OTel SDK logged `TonicMetricsClient.ExportSucceeded`. README documents "how each
   signal is collected".
-- **Publish PENDING:** target repo `LepistaBioinformatics/harness-sphere` (public). Blocked
-  by invalid `gh` credentials (`gh auth status` → Bad credentials). Needs the user to run
-  `gh auth login -h github.com`; then `gh repo create` + push `main`.
+- **Published:** https://github.com/LepistaBioinformatics/harness-sphere (PUBLIC, default
+  branch `main`). Created via `gh repo create` after the user re-authenticated.
 
 ## Delivered structure
 - `crates/domain` — canonical signal model, ports, policies (breaker + criticality). Pure.
