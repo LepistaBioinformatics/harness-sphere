@@ -13,12 +13,14 @@ path = "src/main.rs"
 [features]
 default = []
 otlp = ["harnesssphere-export/otlp"]
+ingest = ["dep:harnesssphere-ingest"]
 
 [dependencies]
 harnesssphere-domain.workspace = true
 harnesssphere-runtime.workspace = true
 harnesssphere-collectors.workspace = true
 harnesssphere-export.workspace = true
+harnesssphere-ingest = { workspace = true, optional = true }
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

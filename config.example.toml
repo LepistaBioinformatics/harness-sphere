@@ -5,4 +5,13 @@
 host_interval_secs = 5     # host collection interval (Critical)
 self_interval_secs = 10    # self-observability interval (Critical)
 critical_threshold = 3     # consecutive failures of a Critical before exiting (exit != 0)
-exporter = "stdout"        # "stdout" (sprint 1). "otlp" arrives via the `otlp` feature.
+exporter = "stdout"        # "stdout" or "otlp" (the latter needs the `otlp` feature)
+
+# OTLP exporter (when exporter = "otlp"; build with --features otlp)
+otlp_endpoint = "http://localhost:4317"
+service_name = "harnesssphere"
+metric_export_interval_secs = 15
+
+# Local OTLP ingest receiver (build with --features ingest)
+ingest_enabled = false           # accept OTLP that OpenClaw/Hermes push to us
+ingest_endpoint = "0.0.0.0:4317" # gRPC bind address for the receiver

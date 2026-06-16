@@ -73,3 +73,29 @@ pub trait SignalExporter: Send + Sync + 'static {
     async fn export(&self, batch: Vec<Signal>) -> Result<(), ExportError>;
     async fn shutdown(&self) {}
 }
+
+#[derive(Debug, Error)]
+pub enum RecvError {
+    #[error("failed to bind receiver: {0}")]
+    Bind(String),
+    #[error("receiver failed: {0}")]
+    Failed(String),
+}
+
+/// Static metadata for a receiver.
+#[derive(Debug, Clone)]
+pub struct ReceiverDescriptor {
+    pub name: &'static str,
+    pub endpoint: String,
+}
+
+/// Driving port: a *push*-based ingest source. Components (OpenClaw/Hermes) push
+/// telemetry in; the receiver converts it to canonical signals and emits via `sink`.
+/// Always Optional — a failing ingest endpoint never takes the watcher down.
+#[async_trait::async_trait]
+pub trait Receiver: Send + Sync + 'static {
+    fn descriptor(&self) -> &ReceiverDescriptor;
+
+    /// Serves until shutdown. Consumes `self` because the underlying server owns it.
+    async fn serve(self: Box<Self>, sink: std::sync::Arc<dyn SignalSink>) -> Result<(), RecvError>;
+}

@@ -53,6 +53,9 @@ async fn main() {
         }
     };
 
+    // --- Driving ingest adapters (push) ---
+    let receivers = build_receivers(&cfg);
+
     let rt_cfg = RuntimeConfig {
         critical_threshold: cfg.critical_threshold,
         ..Default::default()
@@ -60,11 +63,12 @@ async fn main() {
 
     tracing::info!(
         sources = sources.len(),
+        receivers = receivers.len(),
         exporter = %cfg.exporter,
         "HarnessSphere starting"
     );
 
-    let supervisor = Supervisor::new(rt_cfg, sources, exporter);
+    let supervisor = Supervisor::new(rt_cfg, sources, exporter).with_receivers(receivers);
     match supervisor.run().await {
         Ok(()) => {
             tracing::info!("shut down gracefully");
@@ -103,10 +107,45 @@ fn build_otlp_exporter(_cfg: &Config) -> Arc<dyn SignalExporter> {
     std::process::exit(2);
 }
 
-#[cfg(feature = "otlp")]
+#[cfg(any(feature = "otlp", feature = "ingest"))]
 fn hostname() -> String {
     std::fs::read_to_string("/proc/sys/kernel/hostname")
         .map(|s| s.trim().to_owned())
         .or_else(|_| std::env::var("HOSTNAME"))
         .unwrap_or_else(|_| "unknown".to_owned())
+}
+
+#[cfg(feature = "ingest")]
+fn build_receivers(cfg: &Config) -> Vec<Box<dyn harnesssphere_domain::Receiver>> {
+    use harnesssphere_ingest::OtlpReceiver;
+    if !cfg.ingest_enabled {
+        return Vec::new();
+    }
+    // Anti-loop guard (FR-INGEST-03), best-effort: warn if the exporter would push back
+    // into our own receiver port.
+    if cfg.exporter == "otlp" && same_port(&cfg.otlp_endpoint, &cfg.ingest_endpoint) {
+        tracing::warn!(
+            otlp_endpoint = %cfg.otlp_endpoint,
+            ingest_endpoint = %cfg.ingest_endpoint,
+            "OTLP exporter target shares the ingest port — possible telemetry loop"
+        );
+    }
+    vec![Box::new(OtlpReceiver::new(
+        cfg.ingest_endpoint.clone(),
+        hostname(),
+    ))]
+}
+
+#[cfg(not(feature = "ingest"))]
+fn build_receivers(cfg: &Config) -> Vec<Box<dyn harnesssphere_domain::Receiver>> {
+    if cfg.ingest_enabled {
+        eprintln!("ingest enabled in config but binary built without `--features ingest`");
+    }
+    Vec::new()
+}
+
+#[cfg(feature = "ingest")]
+fn same_port(a: &str, b: &str) -> bool {
+    let port = |s: &str| s.rsplit(':').next().map(|p| p.to_owned());
+    port(a).is_some() && port(a) == port(b)
 }

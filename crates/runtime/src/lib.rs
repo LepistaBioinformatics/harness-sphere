@@ -6,7 +6,7 @@
 
 use futures::FutureExt;
 use harnesssphere_domain::{
-    classify_failure, CircuitBreaker, Criticality, FailureAction, ProbeResult, Signal,
+    classify_failure, CircuitBreaker, Criticality, FailureAction, ProbeResult, Receiver, Signal,
     SignalExporter, SignalSink, SignalSource,
 };
 use std::panic::AssertUnwindSafe;
@@ -70,6 +70,7 @@ pub struct FatalSignal {
 pub struct Supervisor {
     cfg: RuntimeConfig,
     sources: Vec<Box<dyn SignalSource>>,
+    receivers: Vec<Box<dyn Receiver>>,
     exporter: Arc<dyn SignalExporter>,
 }
 
@@ -82,8 +83,16 @@ impl Supervisor {
         Supervisor {
             cfg,
             sources,
+            receivers: Vec::new(),
             exporter,
         }
+    }
+
+    /// Adds driving ingest adapters (push). Always Optional — a receiver that fails to
+    /// bind or serve is logged and never makes the process exit.
+    pub fn with_receivers(mut self, receivers: Vec<Box<dyn Receiver>>) -> Self {
+        self.receivers = receivers;
+        self
     }
 
     /// Runs until Ctrl-C is received or a Critical source fails fatally.
@@ -114,6 +123,18 @@ impl Supervisor {
                 source, sink, fatal_tx, threshold,
             )));
         }
+        // One task per receiver (driving/push adapters). Always Optional.
+        for receiver in self.receivers {
+            let desc = receiver.descriptor().clone();
+            let recv_sink: Arc<dyn SignalSink> = Arc::new(sink.clone());
+            handles.push(tokio::spawn(async move {
+                tracing::info!(receiver = desc.name, endpoint = %desc.endpoint, "ingest receiver listening");
+                if let Err(e) = receiver.serve(recv_sink).await {
+                    tracing::warn!(receiver = desc.name, error = %e, "ingest receiver stopped (degraded)");
+                }
+            }));
+        }
+
         drop(sink);
         drop(fatal_tx);
 

@@ -52,9 +52,19 @@ failing Optional does not bring it down; happy-path host+self→stdout; policy t
      **observable** instruments to preserve the semconv sum.
    - Push cadence = the SDK's periodic reader (default ~60s), decoupled from the drain
      batch. Evaluate `PeriodicReader` with an explicit interval.
-2. **Ingest plane** (`crates/ingest`): local OTLP receiver (gRPC :4317/HTTP :4318) +
-   Enricher (injects `host.*`/`container.id`, normalizes Hermes `llm.token_count.*`→`gen_ai.*`)
-   + anti-loop guard + content redaction (default on).
+2. **Ingest plane** (`crates/ingest`) — ✅ **v1 DONE** (branch `feat/ingest-plane`):
+   `OtlpReceiver` (feature `ingest`) — OTLP/gRPC server (`tonic` 0.14 + `opentelemetry-proto`
+   0.32) that converts incoming metrics (Gauge + Sum) to canonical signals, runs them
+   through the `Enricher` (injects `host.name`), and emits into the same pipeline as the
+   collectors. New `Receiver` driving port + `Supervisor::with_receivers`. Wiring in the
+   bin via `ingest_enabled`/`ingest_endpoint`; best-effort anti-loop port guard.
+   **Verified (observed success path):** instance A (OTLP exporter) → instance B (ingest
+   receiver + stdout); B printed 20 enriched lines (e.g. `system.cpu.utilization … host.name`),
+   proving receive→convert→enrich→export end-to-end. Converter mapping locked by 2 unit
+   tests.
+   - **v1 scope: metrics only** (Gauge/Sum). Traces/logs ingest pending.
+   - **Pending:** Hermes convention normalization (`llm.token_count.*`→`gen_ai.*`),
+     `container.id` enrichment, content redaction, HTTP (:4318) receiver.
 3. Optional collectors: `container` (cgroup v2), `prometheus` (scrape of OpenClaw
    `/api/diagnostics/prometheus`).
 4. Release pipeline: `cross` + `cargo-zigbuild` for the 6 targets.

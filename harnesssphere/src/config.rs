@@ -20,6 +20,10 @@ pub struct Config {
     pub service_name: String,
     /// Cadence (seconds) of the periodic OTLP metrics reader.
     pub metric_export_interval_secs: u64,
+    /// Enable the local OTLP ingest receiver (feature `ingest`).
+    pub ingest_enabled: bool,
+    /// Address the OTLP ingest receiver binds to (gRPC).
+    pub ingest_endpoint: String,
 }
 
 impl Default for Config {
@@ -32,6 +36,8 @@ impl Default for Config {
             otlp_endpoint: "http://localhost:4317".to_owned(),
             service_name: "harnesssphere".to_owned(),
             metric_export_interval_secs: 15,
+            ingest_enabled: false,
+            ingest_endpoint: "0.0.0.0:4317".to_owned(),
         }
     }
 }
