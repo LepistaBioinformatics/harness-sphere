@@ -58,6 +58,18 @@ cargo build --release --features otlp,ingest
 Point OpenClaw/Hermes at `localhost:4319`; their signals arrive in SigNoz stamped with
 `host.name` and their original `service.name`.
 
+## Ready-made dashboard
+
+Don't hunt metric-by-metric — import the bundled dashboard:
+
+1. SigNoz UI -> **Dashboards** -> **New dashboard** -> **Import JSON**.
+2. Upload [`dashboards/harnesssphere-host.json`](dashboards/harnesssphere-host.json).
+
+It has six panels — host CPU utilization, memory by state, memory utilization, swap, and
+the watcher's own CPU and RSS — all reading the `system.*` / `process.*` metrics the
+binary exports (`service.name=harnesssphere`). Remember: the **Services** tab needs
+*traces*, not metrics, so it stays empty until trace export lands.
+
 ## Tear down
 
 ```bash
