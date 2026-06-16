@@ -1,7 +1,8 @@
 name: Publish to crates.io
 
-# Manually dispatched. Publishes the workspace crates to crates.io in dependency order.
-# Defaults to a dry run; set dry_run=false to actually publish.
+# Manually dispatched. Publishes the workspace crates to crates.io.
+# Run this AFTER the GitHub Release for the version exists (so the downloadable binary
+# is published first). Defaults to a dry run; set dry_run=false to actually publish.
 #
 # Requires the repository secret CARGO_REGISTRY_TOKEN (a crates.io API token).
 on:
@@ -22,30 +23,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Publish crates in dependency order
+      - name: Publish workspace crates
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           set -euo pipefail
+          # `cargo publish --workspace` packages and verifies every member in topological
+          # order, resolving the inter-workspace deps locally (so an unpublished
+          # harnesssphere-domain verifies fine), and waits for crates.io indexing between
+          # crates on a real publish.
           if [ "${{ inputs.dry_run }}" = "true" ]; then
-            # --no-verify: dependent crates can't compile-verify against an unpublished
-            # harnesssphere-domain during a dry run; we still validate packaging, metadata,
-            # ordering and the token. The real (non-dry) publish keeps full verification.
-            DRY="--dry-run --no-verify"
+            cargo publish --workspace --locked --dry-run
           else
-            DRY=""
+            cargo publish --workspace --locked
           fi
-          # domain has no internal deps; the rest depend only on domain; the bin depends on all.
-          for crate in \
-            harnesssphere-domain \
-            harnesssphere-runtime \
-            harnesssphere-collectors \
-            harnesssphere-export \
-            harnesssphere-ingest \
-            harnesssphere; do
-            echo "::group::publish $crate"
-            cargo publish -p "$crate" --locked $DRY
-            echo "::endgroup::"
-            # Give crates.io a moment to index before a dependent crate is published.
-            if [ -z "$DRY" ]; then sleep 20; fi
-          done
