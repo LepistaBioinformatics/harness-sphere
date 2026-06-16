@@ -7,6 +7,16 @@
   clean), domain tests pass (4/4), the binary runs end-to-end (host+self → stdout,
   graceful shutdown via SIGINT).
 
+## Deploy & publish (2026-06-15)
+- **`deploy/signoz/`** — SigNoz stack vendored from the official Apache-2.0 deploy. Brought
+  up and **verified end-to-end**: HarnessSphere (OTLP exporter) → SigNoz collector →
+  ClickHouse held 231 samples of `system.*`/`process.*` (`service.name=harnesssphere`).
+  The OTel SDK logged `TonicMetricsClient.ExportSucceeded`. README documents "how each
+  signal is collected".
+- **Publish PENDING:** target repo `LepistaBioinformatics/harness-sphere` (public). Blocked
+  by invalid `gh` credentials (`gh auth status` → Bad credentials). Needs the user to run
+  `gh auth login -h github.com`; then `gh repo create` + push `main`.
+
 ## Delivered structure
 - `crates/domain` — canonical signal model, ports, policies (breaker + criticality). Pure.
 - `crates/runtime` — supervisor (task per source, 3 containment layers, breaker, drain+batch).
