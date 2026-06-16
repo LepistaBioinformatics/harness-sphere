@@ -1,63 +1,258 @@
 {
-  "title": "HarnessSphere \u2014 Host & Watcher",
-  "description": "Host CPU/memory/swap and the HarnessSphere watcher's own footprint. Metrics arrive via OTLP from the harnesssphere binary (service.name=harnesssphere).",
+  "title": "HarnessSphere \u2014 Harness, Watcher & Host",
+  "description": "Layered view from the AI harness outward to the host. Harness (AI) panels populate once OpenClaw/Hermes/PicoClaw telemetry reaches SigNoz (directly or via the HarnessSphere ingest plane). Watcher/Host read system.*/process.* from the harnesssphere binary.",
   "tags": [
-    "harnesssphere",
-    "host"
+    "harnesssphere"
   ],
   "version": "v5",
   "variables": {},
-  "panelMap": {},
+  "panelMap": {
+    "99e92e03-9bcf-4022-ab75-5a3c9912ec65": {
+      "collapsed": false,
+      "widgets": [
+        {
+          "i": "65c65a4e-bb1e-4301-b5a3-478ed8f40588",
+          "x": 0,
+          "y": 1,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "e71a7cdb-169f-42c4-8d71-ae836caa3bf0",
+          "x": 6,
+          "y": 1,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "28176af4-b5eb-44da-87dd-5a5b9e6dfe76",
+          "x": 0,
+          "y": 7,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "3d1a32b5-c081-4d3c-89e6-682bd7f257e8",
+          "x": 6,
+          "y": 7,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        }
+      ]
+    },
+    "8aab3ed7-92f7-40b0-9068-7c7c231efffd": {
+      "collapsed": false,
+      "widgets": [
+        {
+          "i": "5fa05f70-8cec-44d4-934c-66157112f00b",
+          "x": 0,
+          "y": 14,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "41e6a6ac-08e4-4097-b5b6-2c5ba9e20bdd",
+          "x": 6,
+          "y": 14,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "d0ad576a-b8df-4e05-9589-8552dbf28515",
+          "x": 0,
+          "y": 20,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        }
+      ]
+    },
+    "40780aca-aa27-421c-b0c0-18f30feb828a": {
+      "collapsed": false,
+      "widgets": [
+        {
+          "i": "c5a1f743-a612-47c1-b1a7-b1b1afec11ca",
+          "x": 0,
+          "y": 27,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "64fb8d81-018c-45a4-ad4c-cfe1c4650837",
+          "x": 6,
+          "y": 27,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "847da998-069b-4e2f-9bc0-dd3f07ab908b",
+          "x": 0,
+          "y": 33,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "10930661-aec3-4a26-a2ea-c813d12e6731",
+          "x": 6,
+          "y": 33,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        }
+      ]
+    }
+  },
   "layout": [
     {
-      "i": "1a6bbced-7b5d-4b75-85f2-f427a8c59de5",
+      "i": "99e92e03-9bcf-4022-ab75-5a3c9912ec65",
       "x": 0,
       "y": 0,
-      "w": 6,
-      "h": 6,
+      "w": 12,
+      "h": 1,
       "moved": false,
-      "static": false
+      "static": false,
+      "maxH": 1,
+      "minH": 1,
+      "minW": 12
     },
     {
-      "i": "82c79101-d29c-4ca8-827f-86cdf6a68338",
-      "x": 6,
-      "y": 0,
-      "w": 6,
-      "h": 6,
-      "moved": false,
-      "static": false
-    },
-    {
-      "i": "ad78bb34-54c0-4ea2-837f-0e13332bfc93",
+      "i": "65c65a4e-bb1e-4301-b5a3-478ed8f40588",
       "x": 0,
-      "y": 6,
+      "y": 1,
       "w": 6,
       "h": 6,
       "moved": false,
       "static": false
     },
     {
-      "i": "8dca826e-0f62-4dfd-92dd-0cf15d70a998",
+      "i": "e71a7cdb-169f-42c4-8d71-ae836caa3bf0",
       "x": 6,
-      "y": 6,
+      "y": 1,
       "w": 6,
       "h": 6,
       "moved": false,
       "static": false
     },
     {
-      "i": "aafa4da5-8f96-4b4b-b8d3-eb894fab2873",
+      "i": "28176af4-b5eb-44da-87dd-5a5b9e6dfe76",
       "x": 0,
-      "y": 12,
+      "y": 7,
       "w": 6,
       "h": 6,
       "moved": false,
       "static": false
     },
     {
-      "i": "99c4a694-d368-4b54-895d-86565db8e49d",
+      "i": "3d1a32b5-c081-4d3c-89e6-682bd7f257e8",
       "x": 6,
-      "y": 12,
+      "y": 7,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "8aab3ed7-92f7-40b0-9068-7c7c231efffd",
+      "x": 0,
+      "y": 13,
+      "w": 12,
+      "h": 1,
+      "moved": false,
+      "static": false,
+      "maxH": 1,
+      "minH": 1,
+      "minW": 12
+    },
+    {
+      "i": "5fa05f70-8cec-44d4-934c-66157112f00b",
+      "x": 0,
+      "y": 14,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "41e6a6ac-08e4-4097-b5b6-2c5ba9e20bdd",
+      "x": 6,
+      "y": 14,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "d0ad576a-b8df-4e05-9589-8552dbf28515",
+      "x": 0,
+      "y": 20,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "40780aca-aa27-421c-b0c0-18f30feb828a",
+      "x": 0,
+      "y": 26,
+      "w": 12,
+      "h": 1,
+      "moved": false,
+      "static": false,
+      "maxH": 1,
+      "minH": 1,
+      "minW": 12
+    },
+    {
+      "i": "c5a1f743-a612-47c1-b1a7-b1b1afec11ca",
+      "x": 0,
+      "y": 27,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "64fb8d81-018c-45a4-ad4c-cfe1c4650837",
+      "x": 6,
+      "y": 27,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "847da998-069b-4e2f-9bc0-dd3f07ab908b",
+      "x": 0,
+      "y": 33,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "10930661-aec3-4a26-a2ea-c813d12e6731",
+      "x": 6,
+      "y": 33,
       "w": 6,
       "h": 6,
       "moved": false,
@@ -66,7 +261,564 @@
   ],
   "widgets": [
     {
-      "id": "1a6bbced-7b5d-4b75-85f2-f427a8c59de5",
+      "id": "99e92e03-9bcf-4022-ab75-5a3c9912ec65",
+      "title": "Harness (AI) \u2014 needs OpenClaw/Hermes/PicoClaw telemetry flowing",
+      "description": "",
+      "panelTypes": "row"
+    },
+    {
+      "id": "65c65a4e-bb1e-4301-b5a3-478ed8f40588",
+      "title": "GenAI \u2014 token usage",
+      "description": "gen_ai.client.token.usage (tokens)",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "gen_ai.client.token.usage",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "7b9f0f52-8757-4dee-a9db-f66f7db2c336"
+      }
+    },
+    {
+      "id": "e71a7cdb-169f-42c4-8d71-ae836caa3bf0",
+      "title": "GenAI \u2014 operation duration",
+      "description": "gen_ai.client.operation.duration (s)",
+      "panelTypes": "graph",
+      "yAxisUnit": "s",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "gen_ai.client.operation.duration",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "avg",
+                  "temporality": null,
+                  "timeAggregation": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "0af7a583-d81c-40cb-9dd6-b203af38d1d4"
+      }
+    },
+    {
+      "id": "28176af4-b5eb-44da-87dd-5a5b9e6dfe76",
+      "title": "OpenClaw \u2014 tokens",
+      "description": "openclaw.tokens (flows via ingest; Sum)",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "openclaw.tokens",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "0a7520dc-cbdd-4dcc-8616-f709e54829fd"
+      }
+    },
+    {
+      "id": "3d1a32b5-c081-4d3c-89e6-682bd7f257e8",
+      "title": "OpenClaw \u2014 cost (USD)",
+      "description": "openclaw.cost.usd",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "openclaw.cost.usd",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "increase"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "aedcf813-c07f-4284-bfc4-d60a742772ff"
+      }
+    },
+    {
+      "id": "8aab3ed7-92f7-40b0-9068-7c7c231efffd",
+      "title": "Watcher (HarnessSphere itself)",
+      "description": "",
+      "panelTypes": "row"
+    },
+    {
+      "id": "5fa05f70-8cec-44d4-934c-66157112f00b",
+      "title": "Watcher \u2014 CPU utilization",
+      "description": "HarnessSphere's own CPU",
+      "panelTypes": "graph",
+      "yAxisUnit": "percentunit",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "process.cpu.utilization",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "avg",
+                  "temporality": null,
+                  "timeAggregation": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "4dc487a5-51c7-46ab-b9d9-532897a2df03"
+      }
+    },
+    {
+      "id": "41e6a6ac-08e4-4097-b5b6-2c5ba9e20bdd",
+      "title": "Watcher \u2014 Memory (RSS)",
+      "description": "Resident memory",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "process.memory.usage",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "avg",
+                  "temporality": null,
+                  "timeAggregation": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "eba3bea4-7d92-4706-895b-3962cf240955"
+      }
+    },
+    {
+      "id": "d0ad576a-b8df-4e05-9589-8552dbf28515",
+      "title": "Watcher \u2014 Memory (virtual)",
+      "description": "Virtual memory",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "process.memory.virtual",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "avg",
+                  "temporality": null,
+                  "timeAggregation": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "919ca318-c676-4c66-b75f-277f6a96e98d"
+      }
+    },
+    {
+      "id": "40780aca-aa27-421c-b0c0-18f30feb828a",
+      "title": "Host",
+      "description": "",
+      "panelTypes": "row"
+    },
+    {
+      "id": "c5a1f743-a612-47c1-b1a7-b1b1afec11ca",
       "title": "Host \u2014 CPU utilization",
       "description": "Fraction of host CPU in use",
       "panelTypes": "graph",
@@ -139,13 +891,13 @@
             "query": ""
           }
         ],
-        "id": "3b39e236-93c4-4975-84e8-de459ee1ff47"
+        "id": "b4df94d2-9678-4c5d-8186-d6a32d6ad4a9"
       }
     },
     {
-      "id": "82c79101-d29c-4ca8-827f-86cdf6a68338",
+      "id": "64fb8d81-018c-45a4-ad4c-cfe1c4650837",
       "title": "Host \u2014 Memory by state",
-      "description": "Bytes of RAM by state (used/free/available)",
+      "description": "Bytes of RAM (used/free/available)",
       "panelTypes": "graph",
       "yAxisUnit": "bytes",
       "fillSpans": false,
@@ -225,11 +977,11 @@
             "query": ""
           }
         ],
-        "id": "a4af7c52-8e65-48cb-bc5c-6ba2708c70e3"
+        "id": "e0aa355e-011e-4d61-a4ee-ce4cf1b3e1a1"
       }
     },
     {
-      "id": "ad78bb34-54c0-4ea2-837f-0e13332bfc93",
+      "id": "847da998-069b-4e2f-9bc0-dd3f07ab908b",
       "title": "Host \u2014 Memory utilization",
       "description": "Fraction of RAM used",
       "panelTypes": "graph",
@@ -302,13 +1054,13 @@
             "query": ""
           }
         ],
-        "id": "310fc1d5-f715-460d-9b7b-fce8097771c9"
+        "id": "fefd0384-99fc-415a-bcb7-d8ead0b4da38"
       }
     },
     {
-      "id": "8dca826e-0f62-4dfd-92dd-0cf15d70a998",
+      "id": "10930661-aec3-4a26-a2ea-c813d12e6731",
       "title": "Host \u2014 Swap used",
-      "description": "Swap (paging) bytes in use",
+      "description": "Swap bytes in use",
       "panelTypes": "graph",
       "yAxisUnit": "bytes",
       "fillSpans": false,
@@ -379,161 +1131,7 @@
             "query": ""
           }
         ],
-        "id": "883707a1-6231-4606-a398-927321f68a54"
-      }
-    },
-    {
-      "id": "aafa4da5-8f96-4b4b-b8d3-eb894fab2873",
-      "title": "Watcher \u2014 CPU utilization",
-      "description": "HarnessSphere's own CPU",
-      "panelTypes": "graph",
-      "yAxisUnit": "percentunit",
-      "fillSpans": false,
-      "isStacked": false,
-      "nullZeroValues": "zero",
-      "opacity": "1",
-      "columnUnits": {},
-      "bucketCount": 30,
-      "bucketWidth": 0,
-      "mergeAllActiveQueries": false,
-      "softMax": null,
-      "softMin": null,
-      "thresholds": [],
-      "selectedLogFields": [],
-      "selectedTracesFields": [],
-      "query": {
-        "queryType": "builder",
-        "builder": {
-          "queryData": [
-            {
-              "aggregations": [
-                {
-                  "metricName": "process.cpu.utilization",
-                  "reduceTo": "avg",
-                  "spaceAggregation": "avg",
-                  "temporality": null,
-                  "timeAggregation": "avg"
-                }
-              ],
-              "dataSource": "metrics",
-              "disabled": false,
-              "expression": "A",
-              "filter": {
-                "expression": ""
-              },
-              "filters": {
-                "items": [],
-                "op": "AND"
-              },
-              "functions": [],
-              "groupBy": [],
-              "having": {
-                "expression": ""
-              },
-              "legend": "",
-              "limit": null,
-              "orderBy": [],
-              "queryName": "A",
-              "reduceTo": "avg",
-              "stepInterval": 60
-            }
-          ],
-          "queryFormulas": []
-        },
-        "clickhouse_sql": [
-          {
-            "disabled": false,
-            "legend": "",
-            "name": "A",
-            "query": ""
-          }
-        ],
-        "promql": [
-          {
-            "disabled": false,
-            "legend": "",
-            "name": "A",
-            "query": ""
-          }
-        ],
-        "id": "741247bf-31d0-46e4-b222-90a7a20899a7"
-      }
-    },
-    {
-      "id": "99c4a694-d368-4b54-895d-86565db8e49d",
-      "title": "Watcher \u2014 Memory (RSS)",
-      "description": "HarnessSphere's resident memory",
-      "panelTypes": "graph",
-      "yAxisUnit": "bytes",
-      "fillSpans": false,
-      "isStacked": false,
-      "nullZeroValues": "zero",
-      "opacity": "1",
-      "columnUnits": {},
-      "bucketCount": 30,
-      "bucketWidth": 0,
-      "mergeAllActiveQueries": false,
-      "softMax": null,
-      "softMin": null,
-      "thresholds": [],
-      "selectedLogFields": [],
-      "selectedTracesFields": [],
-      "query": {
-        "queryType": "builder",
-        "builder": {
-          "queryData": [
-            {
-              "aggregations": [
-                {
-                  "metricName": "process.memory.usage",
-                  "reduceTo": "avg",
-                  "spaceAggregation": "avg",
-                  "temporality": null,
-                  "timeAggregation": "avg"
-                }
-              ],
-              "dataSource": "metrics",
-              "disabled": false,
-              "expression": "A",
-              "filter": {
-                "expression": ""
-              },
-              "filters": {
-                "items": [],
-                "op": "AND"
-              },
-              "functions": [],
-              "groupBy": [],
-              "having": {
-                "expression": ""
-              },
-              "legend": "",
-              "limit": null,
-              "orderBy": [],
-              "queryName": "A",
-              "reduceTo": "avg",
-              "stepInterval": 60
-            }
-          ],
-          "queryFormulas": []
-        },
-        "clickhouse_sql": [
-          {
-            "disabled": false,
-            "legend": "",
-            "name": "A",
-            "query": ""
-          }
-        ],
-        "promql": [
-          {
-            "disabled": false,
-            "legend": "",
-            "name": "A",
-            "query": ""
-          }
-        ],
-        "id": "4ab15d5b-9f70-44a4-9222-9ac0b994e700"
+        "id": "0124e063-271e-4c58-a040-1f603b06704a"
       }
     }
   ]

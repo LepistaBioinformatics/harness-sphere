@@ -65,10 +65,18 @@ Don't hunt metric-by-metric — import the bundled dashboard:
 1. SigNoz UI -> **Dashboards** -> **New dashboard** -> **Import JSON**.
 2. Upload [`dashboards/harnesssphere-host.json`](dashboards/harnesssphere-host.json).
 
-It has six panels — host CPU utilization, memory by state, memory utilization, swap, and
-the watcher's own CPU and RSS — all reading the `system.*` / `process.*` metrics the
-binary exports (`service.name=harnesssphere`). Remember: the **Services** tab needs
-*traces*, not metrics, so it stays empty until trace export lands.
+It's laid out in three sections, inner → outer:
+
+1. **Harness (AI)** — `gen_ai.client.token.usage`, `gen_ai.client.operation.duration`,
+   `openclaw.tokens`, `openclaw.cost.usd`. These populate **once OpenClaw/Hermes/PicoClaw
+   telemetry reaches SigNoz** (directly, or via the HarnessSphere ingest plane) — empty
+   until then.
+2. **Watcher** — the binary's own CPU, RSS and virtual memory (`process.*`).
+3. **Host** — CPU, memory by `system.memory.state`, memory utilization, swap (`system.*`).
+
+Watcher and Host light up immediately from the running binary
+(`service.name=harnesssphere`). Remember: the **Services** tab needs *traces*, not
+metrics, so it stays empty until trace export lands.
 
 ## Tear down
 
