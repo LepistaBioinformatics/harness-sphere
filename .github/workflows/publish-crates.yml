@@ -28,7 +28,10 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ inputs.dry_run }}" = "true" ]; then
-            DRY="--dry-run"
+            # --no-verify: dependent crates can't compile-verify against an unpublished
+            # harnesssphere-domain during a dry run; we still validate packaging, metadata,
+            # ordering and the token. The real (non-dry) publish keeps full verification.
+            DRY="--dry-run --no-verify"
           else
             DRY=""
           fi
