@@ -1,0 +1,50 @@
+name: Prepare release PR
+
+# Manually dispatched. Bumps the workspace version on a `release/*` branch and opens a PR.
+# Merging that PR triggers `release.yml` (tag + cross-built binaries + GitHub Release).
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Semver bump level"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    name: Open release PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-edit
+      - name: Bump workspace version and sync lockfile
+        id: bump
+        run: |
+          cargo set-version --bump "${{ inputs.bump }}"
+          cargo update --workspace
+          VERSION="$(cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[] | select(.name=="harnesssphere") | .version')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "New version: $VERSION"
+      - name: Open release PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.bump.outputs.version }}"
+          BRANCH="release/v$VERSION"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git commit -am "chore(release): v$VERSION"
+          git push -u origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "release: v$VERSION" \
+            --body "Automated release preparation for **v$VERSION**. Merging this PR tags \`v$VERSION\`, cross-builds the portable binaries, and publishes the GitHub Release with the artifacts. Publish to crates.io afterwards via the *Publish to crates.io* workflow."

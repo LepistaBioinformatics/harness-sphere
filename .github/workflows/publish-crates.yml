@@ -1,7 +1,8 @@
 name: Publish to crates.io
 
-# Manually dispatched. Publishes the workspace crates to crates.io in dependency order.
-# Defaults to a dry run; set dry_run=false to actually publish.
+# Manually dispatched. Publishes the workspace crates to crates.io.
+# Run this AFTER the GitHub Release for the version exists (so the downloadable binary
+# is published first). Defaults to a dry run; set dry_run=false to actually publish.
 #
 # Requires the repository secret CARGO_REGISTRY_TOKEN (a crates.io API token).
 on:
