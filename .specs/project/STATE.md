@@ -1,5 +1,45 @@
 # STATE — HarnessSphere project memory
 
+## Snapshot (2026-06-18) — current
+
+Repo: https://github.com/LepistaBioinformatics/harness-sphere (PUBLIC, `main`). 10 PRs
+merged (#1–#10), `main` @ green. 11 tests pass. Toolchain Rust stable 1.96 / edition 2024.
+
+**Architecture:** hexagonal (ports & adapters), Option A (unified sidecar collector).
+`domain` (pure, zero IO/OTel) · `runtime` (supervisor, breaker, drain) · `collectors` ·
+`ingest` (OTLP receiver) · `export` (stdout + OTLP behind feature `otlp`) · `harnesssphere`
+(bin / composition root).
+
+**Working & verified end-to-end (against a real SigNoz):**
+- Collectors: `host`, `self` (Critical); `process` (watch by name), `endpoint-probe` (TCP
+  liveness), `session` (parses harness session JSONL) — all Optional, config-driven.
+- Ingest plane (feature `ingest`): OTLP gRPC receiver for **metrics + traces + logs +
+  histograms**, merges resource identity, enriches with `host.name`, feeds the pipeline.
+- Export (feature `otlp`): metrics via SDK; **traces/logs/histograms** via OTLP proto
+  clients, grouped by `service.name` onto the Resource (so SigNoz Services/Logs populate).
+- Resilience: Critical panic anywhere → fatal (catch_unwind at task root); Optional never
+  crashes; flush-on-fatal.
+- SigNoz deploy (`deploy/signoz/`) + layered dashboard (`harnesssphere-host.json`).
+
+**PicoClaw integration:** PicoClaw exports NO telemetry (no diagnostics/otel; gateway
+`:18790` has no `/metrics`) and doesn't write tokens to disk. Visible anyway via: process
+watch (CPU/mem), endpoint probe (gateway health), and the **session collector** (messages
+by role + tool.calls + sessions from `~/.picoclaw/workspace/sessions/*.jsonl`). Tokens
+require OpenClaw/Hermes (real OTLP) → ingest.
+
+**CI (`.github/workflows/`):** `audit` (cargo-audit), `deepseek-pr-review` (DeepSeek review
+on every PR; needs secret `DEEPSEEK_API_KEY` — set), `release-pr` + `release` (PR-driven:
+merge a `release/*` PR → tag + cross-built binaries + GitHub Release; v0.1.1 published),
+`publish-crates` (manual; needs `CARGO_REGISTRY_TOKEN` — set; dry-run validated, real
+publish not yet run).
+
+**Backlog (low priority):** Tier 2 — `container` (cgroup v2), `prometheus` scrape of
+OpenClaw `/api/diagnostics/prometheus`. Polish — DeepSeek dedup/prompt-in-file/labeled-run;
+`ChannelSink` drop-oldest; Optional re-spawn; Hermes `llm.token_count.*`→`gen_ai.*`
+normalization; GenAI content redaction (GA-05); run the real crates.io publish.
+
+---
+
 ## Current status (2026-06-15)
 - **PLAN approved.** **Hexagonal architecture (ports & adapters)**, scope **Option A**
   (unified sidecar collector), GenAI content **opt-in**, critical crash by **threshold**.
