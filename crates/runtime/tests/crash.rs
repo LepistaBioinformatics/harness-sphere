@@ -34,6 +34,23 @@ impl SignalExporter for NoopExporter {
     }
 }
 
+/// A source whose `probe()` panics — exercises the supervisor-task catch_unwind safety net.
+struct PanicProbe {
+    desc: SourceDescriptor,
+}
+#[async_trait::async_trait]
+impl SignalSource for PanicProbe {
+    fn descriptor(&self) -> &SourceDescriptor {
+        &self.desc
+    }
+    async fn probe(&mut self) -> ProbeResult {
+        panic!("probe boom");
+    }
+    async fn collect(&mut self, _sink: &dyn SignalSink) -> Result<(), CollectError> {
+        Ok(())
+    }
+}
+
 fn source(name: &'static str, crit: Criticality) -> Box<dyn SignalSource> {
     Box::new(AlwaysFail {
         desc: SourceDescriptor {
@@ -58,6 +75,32 @@ async fn critical_persistent_failure_is_fatal() {
     let res = tokio::time::timeout(Duration::from_secs(5), sup.run()).await;
     let inner = res.expect("supervisor did not return — fatal path stalled");
     let fatal = inner.expect_err("an always-failing Critical source should be FATAL");
+    assert_eq!(fatal.source, "host");
+}
+
+#[tokio::test]
+async fn critical_probe_panic_is_fatal() {
+    // A panic in a Critical source's probe must not die silently — it escalates to fatal.
+    let src: Box<dyn SignalSource> = Box::new(PanicProbe {
+        desc: SourceDescriptor {
+            name: "host",
+            layer: Layer::Host,
+            criticality: Criticality::Critical,
+            default_interval: Duration::from_millis(5),
+        },
+    });
+    let sup = Supervisor::new(
+        RuntimeConfig {
+            critical_threshold: 1,
+            ..Default::default()
+        },
+        vec![src],
+        Arc::new(NoopExporter),
+    );
+    let inner = tokio::time::timeout(Duration::from_secs(5), sup.run())
+        .await
+        .expect("supervisor did not return — panic escalation stalled");
+    let fatal = inner.expect_err("a Critical probe panic should be FATAL");
     assert_eq!(fatal.source, "host");
 }
 
