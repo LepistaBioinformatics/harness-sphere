@@ -68,7 +68,7 @@ Don't hunt metric-by-metric — import the bundled dashboard:
 > Re-importing creates a **fresh** dashboard (panel IDs are regenerated on each update), so
 > any local customizations to a previously imported copy are not carried over — import as new.
 
-It's laid out in five vendor-neutral sections, inner → outer (OTel semantic conventions
+It's laid out in six vendor-neutral sections, inner → outer (OTel semantic conventions
 plus the `harnesssphere.*` namespace). ✅ = populated by the watcher today, ⏳ = needs an
 AI/gateway source emitting:
 
@@ -81,7 +81,10 @@ AI/gateway source emitting:
 4. **Processes** — `process.cpu.utilization` / `process.memory.usage` / `process.memory.virtual`,
    grouped by `process.executable.name` ✅ *(the watcher itself, labeled `harnesssphere`, plus
    any watched process such as the PicoClaw gateway)*.
-5. **Host** — CPU, memory by `system.memory.state`, memory utilization, swap (`system.*`) ✅.
+5. **Container (cgroup v2)** — `container.memory.usage`, `harnesssphere.container.memory.limit`,
+   `container.cpu.time`, `harnesssphere.container.cpu.throttled`, `container.disk.io` ✅
+   *(container collector; needs `container_cgroup` set to a cgroup v2 dir)*.
+6. **Host** — CPU, memory by `system.memory.state`, memory utilization, swap (`system.*`) ✅.
 
 The ⏳ panels need an AI/gateway source exporting those signals to SigNoz — directly
 (`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`) or via the HarnessSphere ingest plane
