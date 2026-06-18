@@ -71,9 +71,18 @@ failing Optional does not bring it down; happy-path host+self→stdout; policy t
    receiver + stdout); B printed 20 enriched lines (e.g. `system.cpu.utilization … host.name`),
    proving receive→convert→enrich→export end-to-end. Converter mapping locked by 2 unit
    tests.
-   - **v1 scope: metrics only** (Gauge/Sum). Traces/logs ingest pending.
+   - Metrics (Gauge/Sum) **and now traces** — see item 2b.
    - **Pending:** Hermes convention normalization (`llm.token_count.*`→`gen_ai.*`),
      `container.id` enrichment, content redaction, HTTP (:4318) receiver.
+2b. **Traces end-to-end (Tier 1)** — ✅ **DONE** (branch `feat/traces-ingest-export`):
+   canonical `Span` extended with `trace_id`/`span_id`/`parent_span_id`. Ingest adds an
+   OTLP `TraceService` (proto `trace` feature) → canonical spans (resource attrs merged,
+   enriched with `host.name`). Export adds a `TraceServiceClient` path that groups spans
+   by `service.name` onto the **Resource** (required for SigNoz's Services/APM view).
+   **Verified:** `telemetrygen` → ingest `:4319` → enrich → export → SigNoz: 100 spans in
+   `signoz_traces`, `service=telemetrygen` in `top_level_operations` (the Services tab).
+   - **Pending Tier 1:** OTLP **logs** ingest+export; **histogram** metric ingest (for
+     `gen_ai.client.token.usage`); a real AI source emitting (PicoClaw/OpenClaw/Hermes).
 3. Optional collectors: `container` (cgroup v2), `prometheus` (scrape of OpenClaw
    `/api/diagnostics/prometheus`).
 4. Release pipeline: `cross` + `cargo-zigbuild` for the 6 targets.

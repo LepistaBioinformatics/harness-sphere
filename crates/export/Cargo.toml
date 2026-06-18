@@ -10,7 +10,7 @@ description = "HarnessSphere exporters (stdout, OTLP) for the telemetry pipeline
 [features]
 default = []
 # OTLP adapter — confines the `opentelemetry*` crates (pre-1.0) here.
-otlp = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp"]
+otlp = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp", "dep:opentelemetry-proto", "dep:tonic"]
 
 [dependencies]
 harnesssphere-domain.workspace = true
@@ -20,3 +20,5 @@ tracing.workspace = true
 opentelemetry = { version = "0.32", optional = true }
 opentelemetry_sdk = { version = "0.32", features = ["rt-tokio", "metrics"], optional = true }
 opentelemetry-otlp = { version = "0.32", features = ["metrics", "grpc-tonic"], optional = true }
+opentelemetry-proto = { version = "0.32", default-features = false, features = ["gen-tonic", "trace"], optional = true }
+tonic = { version = "0.14", optional = true }
