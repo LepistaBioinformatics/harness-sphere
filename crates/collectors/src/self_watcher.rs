@@ -55,9 +55,13 @@ impl SignalSource for SelfCollector {
             .process(self.pid)
             .ok_or_else(|| CollectError::Failed("own process disappeared".into()))?;
 
+        // Tag our own process metrics with an executable name so they don't collapse into
+        // an unlabeled series when a dashboard groups process.* by process.executable.name.
         let cpu_frac = (proc.cpu_usage() as f64) / 100.0;
         sink.emit(
-            Metric::now("process.cpu.utilization", MetricKind::Gauge, cpu_frac).into_signal(),
+            Metric::now("process.cpu.utilization", MetricKind::Gauge, cpu_frac)
+                .attr("process.executable.name", "harnesssphere")
+                .into_signal(),
         );
         sink.emit(
             Metric::now(
@@ -66,6 +70,7 @@ impl SignalSource for SelfCollector {
                 proc.memory() as f64,
             )
             .with_unit("By")
+            .attr("process.executable.name", "harnesssphere")
             .into_signal(),
         );
         sink.emit(
@@ -75,6 +80,7 @@ impl SignalSource for SelfCollector {
                 proc.virtual_memory() as f64,
             )
             .with_unit("By")
+            .attr("process.executable.name", "harnesssphere")
             .into_signal(),
         );
 
