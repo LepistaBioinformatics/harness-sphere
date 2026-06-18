@@ -919,7 +919,7 @@
                 {
                   "metricName": "harnesssphere.endpoint.up",
                   "reduceTo": "avg",
-                  "spaceAggregation": "sum",
+                  "spaceAggregation": "max",
                   "temporality": null,
                   "timeAggregation": "latest"
                 }
@@ -1226,7 +1226,7 @@
     {
       "id": "e00ee82c-6f6c-4899-9efa-1fb481298cb7",
       "title": "Process CPU by executable",
-      "description": "process.cpu.utilization (self has no exe label)",
+      "description": "process.cpu.utilization (incl. harnesssphere itself)",
       "panelTypes": "graph",
       "yAxisUnit": "percentunit",
       "fillSpans": false,

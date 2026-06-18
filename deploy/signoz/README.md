@@ -65,6 +65,9 @@ Don't hunt metric-by-metric — import the bundled dashboard:
 1. SigNoz UI -> **Dashboards** -> **New dashboard** -> **Import JSON**.
 2. Upload [`dashboards/harnesssphere-host.json`](dashboards/harnesssphere-host.json).
 
+> Re-importing creates a **fresh** dashboard (panel IDs are regenerated on each update), so
+> any local customizations to a previously imported copy are not carried over — import as new.
+
 It's laid out in five vendor-neutral sections, inner → outer (OTel semantic conventions
 plus the `harnesssphere.*` namespace). ✅ = populated by the watcher today, ⏳ = needs an
 AI/gateway source emitting:
@@ -76,8 +79,8 @@ AI/gateway source emitting:
 3. **Gateway & API** — `harnesssphere.endpoint.up` ✅, `harnesssphere.endpoint.probe.duration` ✅
    *(endpoint probe)*; `http.server.request.duration` ⏳, `harnesssphere.api.requests` ⏳.
 4. **Processes** — `process.cpu.utilization` / `process.memory.usage` / `process.memory.virtual`,
-   grouped by `process.executable.name` ✅ *(the watcher itself + any watched process, e.g.
-   the PicoClaw gateway; the self collector's series carry no executable label)*.
+   grouped by `process.executable.name` ✅ *(the watcher itself, labeled `harnesssphere`, plus
+   any watched process such as the PicoClaw gateway)*.
 5. **Host** — CPU, memory by `system.memory.state`, memory utilization, swap (`system.*`) ✅.
 
 The ⏳ panels need an AI/gateway source exporting those signals to SigNoz — directly
