@@ -5,16 +5,17 @@
 //! the heart of the "single pane" role: AI telemetry passes through HarnessSphere and
 //! gains host context on the way out.
 //!
-//! v1 scope: OTLP/gRPC **metrics** (Gauge + Sum). Traces/logs ingest is a planned
-//! extension.
+//! v1 scope: OTLP/gRPC **metrics** (Gauge + Sum) and **traces** (spans). Logs ingest and
+//! histogram metrics are the next extensions.
 
 use async_trait::async_trait;
 use harnesssphere_domain::{
     AttrValue, Attributes, Enricher, Metric, MetricKind, Receiver, ReceiverDescriptor, RecvError,
-    Signal, SignalSink,
+    Signal, Span, SpanKind, SpanStatus, SignalSink,
 };
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 
@@ -22,8 +23,13 @@ use opentelemetry_proto::tonic::collector::metrics::v1::{
     metrics_service_server::{MetricsService, MetricsServiceServer},
     ExportMetricsServiceRequest, ExportMetricsServiceResponse,
 };
+use opentelemetry_proto::tonic::collector::trace::v1::{
+    trace_service_server::{TraceService, TraceServiceServer},
+    ExportTraceServiceRequest, ExportTraceServiceResponse,
+};
 use opentelemetry_proto::tonic::common::v1::{any_value, KeyValue as PbKeyValue};
 use opentelemetry_proto::tonic::metrics::v1::{metric, number_data_point, NumberDataPoint};
+use opentelemetry_proto::tonic::trace::v1::{span as pb_span, status as pb_status, Span as PbSpan};
 
 pub struct OtlpReceiver {
     descriptor: ReceiverDescriptor,
@@ -56,12 +62,17 @@ impl Receiver for OtlpReceiver {
             .parse()
             .map_err(|e| RecvError::Bind(format!("bad endpoint {}: {e}", self.descriptor.endpoint)))?;
 
-        let svc = MetricsSvc {
+        let metrics = MetricsSvc {
+            sink: sink.clone(),
+            enricher: self.enricher.clone(),
+        };
+        let traces = TraceSvc {
             sink,
             enricher: self.enricher.clone(),
         };
         Server::builder()
-            .add_service(MetricsServiceServer::new(svc))
+            .add_service(MetricsServiceServer::new(metrics))
+            .add_service(TraceServiceServer::new(traces))
             .serve(addr)
             .await
             .map_err(|e| RecvError::Failed(e.to_string()))
@@ -90,6 +101,89 @@ impl MetricsService for MetricsSvc {
         tracing::debug!(count = n, "ingested OTLP metrics");
         Ok(Response::new(ExportMetricsServiceResponse::default()))
     }
+}
+
+struct TraceSvc {
+    sink: Arc<dyn SignalSink>,
+    enricher: Arc<Enricher>,
+}
+
+#[tonic::async_trait]
+impl TraceService for TraceSvc {
+    async fn export(
+        &self,
+        request: Request<ExportTraceServiceRequest>,
+    ) -> Result<Response<ExportTraceServiceResponse>, Status> {
+        let mut signals = convert_traces(request.into_inner());
+        for sig in &mut signals {
+            self.enricher.enrich(sig);
+        }
+        let n = signals.len();
+        for sig in signals {
+            self.sink.emit(sig);
+        }
+        tracing::debug!(count = n, "ingested OTLP spans");
+        Ok(Response::new(ExportTraceServiceResponse::default()))
+    }
+}
+
+fn unix_nano_to_time(nanos: u64) -> SystemTime {
+    SystemTime::UNIX_EPOCH + Duration::from_nanos(nanos)
+}
+
+fn map_span_kind(kind: i32) -> SpanKind {
+    match pb_span::SpanKind::try_from(kind).unwrap_or(pb_span::SpanKind::Unspecified) {
+        pb_span::SpanKind::Client => SpanKind::Client,
+        pb_span::SpanKind::Server => SpanKind::Server,
+        // Internal / Producer / Consumer / Unspecified collapse to Internal (the domain
+        // models only the three kinds we care about for correlation).
+        _ => SpanKind::Internal,
+    }
+}
+
+fn map_span_status(span: &PbSpan) -> SpanStatus {
+    match span.status.as_ref().map(|s| s.code) {
+        Some(c) if c == pb_status::StatusCode::Ok as i32 => SpanStatus::Ok,
+        Some(c) if c == pb_status::StatusCode::Error as i32 => SpanStatus::Error,
+        _ => SpanStatus::Unset,
+    }
+}
+
+/// Walks the OTLP trace request and flattens it into canonical `Span` signals,
+/// preserving trace/span ids and merging resource-level attributes onto each span.
+fn convert_traces(req: ExportTraceServiceRequest) -> Vec<Signal> {
+    let mut out = Vec::new();
+    for rs in req.resource_spans {
+        let resource_attrs: Attributes = rs
+            .resource
+            .map(|r| r.attributes.into_iter().filter_map(to_attr).collect())
+            .unwrap_or_default();
+        for ss in rs.scope_spans {
+            for sp in ss.spans {
+                // Read kind/status before consuming sp.attributes below.
+                let kind = map_span_kind(sp.kind);
+                let status = map_span_status(&sp);
+                let mut attributes = resource_attrs.clone();
+                for kv in sp.attributes {
+                    if let Some(pair) = to_attr(kv) {
+                        attributes.push(pair);
+                    }
+                }
+                out.push(Signal::Span(Span {
+                    trace_id: sp.trace_id,
+                    span_id: sp.span_id,
+                    parent_span_id: sp.parent_span_id,
+                    name: sp.name,
+                    kind,
+                    start: unix_nano_to_time(sp.start_time_unix_nano),
+                    end: unix_nano_to_time(sp.end_time_unix_nano),
+                    status,
+                    attributes,
+                }));
+            }
+        }
+    }
+    out
 }
 
 /// Walks the OTLP request and flattens it into canonical signals.

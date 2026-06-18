@@ -80,8 +80,10 @@ OpenClaw — all names are OTel semantic conventions plus the `harnesssphere.*` 
 (`service.name=harnesssphere`). **Harness / Tools / API stay empty until an AI source
 (OpenClaw/Hermes/PicoClaw) exports those signals to SigNoz** — directly
 (`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`) or via the HarnessSphere ingest
-plane. The **Services** tab needs *traces*, not metrics, so it stays empty until trace
-export lands.
+plane. The **Services** tab needs *traces*, not metrics — and the ingest plane now
+**forwards spans** (build with `--features ingest,otlp`, set `ingest_enabled=true` on a
+free port): a source pushing OTLP spans to HarnessSphere shows up in *Services*, stamped
+with host context.
 
 ## Tear down
 

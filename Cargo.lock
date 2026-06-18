@@ -327,7 +327,9 @@ dependencies = [
  "harnesssphere-domain",
  "opentelemetry",
  "opentelemetry-otlp",
+ "opentelemetry-proto",
  "opentelemetry_sdk",
+ "tonic",
  "tracing",
 ]
 

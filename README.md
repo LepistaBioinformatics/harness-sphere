@@ -355,18 +355,19 @@ HarnessSphere is under active development. Here's the honest state of things:
 - **stdout** exporter and a verified **OTLP/gRPC** exporter (metrics), confirmed
   end-to-end against a real OpenTelemetry Collector.
 - The **ingest plane** (feature `ingest`): a local OTLP/gRPC receiver that OpenClaw/Hermes
-  push to. It converts incoming metrics to the canonical model, **enriches them with host
-  context**, and forwards them through the same pipeline — verified end-to-end (one
-  instance pushing into another, signals arriving enriched with `host.name`).
+  push to. It converts incoming **metrics and traces** to the canonical model, **enriches
+  them with host context**, and forwards them through the same pipeline. Verified
+  end-to-end for both: metrics (instance-to-instance) and **traces** (`telemetrygen` →
+  ingest → SigNoz, spans landing in the **Services/APM** view, grouped by `service.name`).
 - Resilience proven by tests: a persistently-failing Critical source exits non-zero; a
   failing Optional source never brings the watcher down.
 
 **On the roadmap**
+- OTLP **logs** ingest+export and **histogram** metric ingest (for
+  `gen_ai.client.token.usage`).
 - Convention normalization in the ingest plane (Hermes `llm.token_count.*` → `gen_ai.*`),
   `container.id` enrichment, content redaction, and an HTTP (`:4318`) receiver.
-- The Optional collectors: container (cgroup v2), gateway/Prometheus scrape, harness,
-  tools, API.
-- OTLP for logs and traces (today the OTLP path covers metrics).
+- The Optional collectors: container (cgroup v2), gateway/Prometheus scrape.
 - The cross-compilation release pipeline.
 
 The full technical specification, the complete OTel mapping matrix, and the design

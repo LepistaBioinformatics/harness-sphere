@@ -121,6 +121,12 @@ pub enum SpanStatus {
 
 #[derive(Debug, Clone)]
 pub struct Span {
+    /// 16-byte W3C trace id (raw bytes). Required to reconstruct the trace downstream.
+    pub trace_id: Vec<u8>,
+    /// 8-byte span id (raw bytes).
+    pub span_id: Vec<u8>,
+    /// 8-byte parent span id; empty for a root span.
+    pub parent_span_id: Vec<u8>,
     pub name: String,
     pub kind: SpanKind,
     pub start: SystemTime,
