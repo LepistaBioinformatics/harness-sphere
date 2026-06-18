@@ -1,17 +1,17 @@
 {
-  "title": "HarnessSphere \u2014 Harness \u2192 Tools \u2192 API \u2192 Watcher \u2192 Host",
-  "description": "Layered, vendor-neutral view from the AI harness outward to the host. Harness/Tools/API panels use OTel semantic-convention names (gen_ai.*, http.*) plus the harnesssphere.* namespace and populate once telemetry flows (any harness, directly or via the ingest plane). Watcher and Host are live from the running binary.",
+  "title": "HarnessSphere \u2014 Harness \u2192 Tools \u2192 Gateway/API \u2192 Processes \u2192 Host",
+  "description": "Layered, vendor-neutral view. Harness/Tools/API gen_ai/http panels need an AI/gateway source emitting; messages/sessions/tool.calls (session collector), endpoint up/latency (probe), process.* (process+self collectors) and Host (system.*) are live from the watcher.",
   "tags": [
     "harnesssphere"
   ],
   "version": "v5",
   "variables": {},
   "panelMap": {
-    "5d7d502f-fc55-4fbb-9eb7-22be79ce93cb": {
+    "f3f3c01c-f84a-49a4-abc1-02f09ece37a9": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "c462abbe-403b-46e9-8034-641a8cf7548d",
+          "i": "288eb075-50dc-4215-bcbf-fb4895634caa",
           "x": 0,
           "y": 1,
           "w": 6,
@@ -20,7 +20,7 @@
           "static": false
         },
         {
-          "i": "d910a25c-d83b-479a-8a61-dbf6f1fab8f5",
+          "i": "e01447c5-6bcc-4bf2-a72e-f53bf49e7afc",
           "x": 6,
           "y": 1,
           "w": 6,
@@ -29,8 +29,17 @@
           "static": false
         },
         {
-          "i": "a18c416a-d669-4943-ae8c-85f2a46e7d5f",
+          "i": "ef074252-fb62-4525-b258-3aea63ea837e",
           "x": 0,
+          "y": 7,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "a302634a-16f4-410d-8f98-51e7480b0b2f",
+          "x": 6,
           "y": 7,
           "w": 6,
           "h": 6,
@@ -39,11 +48,11 @@
         }
       ]
     },
-    "058e69bb-8e2a-493b-bf07-7b1ca6206dc4": {
+    "53b1e8f5-2e14-4489-9921-ec96ca883151": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "75c74c2e-276f-4ef6-b242-7ed58b11189d",
+          "i": "7f4b5774-c642-4e1a-b2a1-29592eac0d2d",
           "x": 0,
           "y": 14,
           "w": 6,
@@ -52,7 +61,7 @@
           "static": false
         },
         {
-          "i": "2a85cd93-59c7-4e6d-a6ed-670c5ce7b479",
+          "i": "6ade415d-7313-4f37-8300-e5ce34a32a43",
           "x": 6,
           "y": 14,
           "w": 6,
@@ -62,11 +71,11 @@
         }
       ]
     },
-    "b7d945af-b591-4602-9385-8843d85f93da": {
+    "bfe606f0-89ac-4d1b-a1c1-8ff56144d6d9": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "c852fbd1-92dd-414f-8384-d10f064ffc74",
+          "i": "5ce6605a-4d71-4d7a-928d-22147a7c4009",
           "x": 0,
           "y": 21,
           "w": 6,
@@ -75,7 +84,7 @@
           "static": false
         },
         {
-          "i": "c82af4ab-7e57-4003-92e1-dfcc9b973009",
+          "i": "eaf30dd9-cc6f-48a8-88f1-22cd3686f578",
           "x": 6,
           "y": 21,
           "w": 6,
@@ -84,8 +93,17 @@
           "static": false
         },
         {
-          "i": "74a53ca1-9712-4846-8fa5-3e50b70e84c5",
+          "i": "2eeaeec2-b9f1-4493-9759-dd4ec8823255",
           "x": 0,
+          "y": 27,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "7fe1eb4a-1394-448c-ba07-c54ff3924c69",
+          "x": 6,
           "y": 27,
           "w": 6,
           "h": 6,
@@ -94,11 +112,11 @@
         }
       ]
     },
-    "74c5b6a9-0001-4900-8476-b6ee574573c8": {
+    "9b663634-6d62-4406-b294-1b3d8be0941d": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "b5de2162-04c4-43dc-94fd-8df120fb063f",
+          "i": "e00ee82c-6f6c-4899-9efa-1fb481298cb7",
           "x": 0,
           "y": 34,
           "w": 6,
@@ -107,7 +125,7 @@
           "static": false
         },
         {
-          "i": "94d6e1fd-8101-4e28-96fc-f6f6a00a4238",
+          "i": "e2435bec-623a-4897-87c8-da4d50f6b6a9",
           "x": 6,
           "y": 34,
           "w": 6,
@@ -116,7 +134,7 @@
           "static": false
         },
         {
-          "i": "a05956e6-3879-4186-a819-afc3978cf080",
+          "i": "68168e0f-8800-4ee3-a50c-c00eee40f836",
           "x": 0,
           "y": 40,
           "w": 6,
@@ -126,11 +144,11 @@
         }
       ]
     },
-    "eb46a689-09bc-41b7-93cb-6982b2304df5": {
+    "788a3b8c-9fd2-402d-8859-c08d73c10f19": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "4bd7ceb0-79c9-4bc2-90c2-060f37810eb8",
+          "i": "0f0d9dd7-957b-4bd6-9f41-cb3c36355f78",
           "x": 0,
           "y": 47,
           "w": 6,
@@ -139,7 +157,7 @@
           "static": false
         },
         {
-          "i": "3aabf9e1-4a89-4067-8d9c-2bc1d7f6a97d",
+          "i": "99ed1b3d-1ff2-4b0b-a34b-515a24346a43",
           "x": 6,
           "y": 47,
           "w": 6,
@@ -148,7 +166,7 @@
           "static": false
         },
         {
-          "i": "4f5c8c2d-8834-4cc0-94fe-1a9e1274b106",
+          "i": "ee49c2d1-4df2-4130-b32d-d1f02626eaee",
           "x": 0,
           "y": 53,
           "w": 6,
@@ -157,7 +175,7 @@
           "static": false
         },
         {
-          "i": "d6df875d-8518-4222-8894-9f929fe9a50b",
+          "i": "93935aa7-8479-47bf-aab7-28eab4b40514",
           "x": 6,
           "y": 53,
           "w": 6,
@@ -170,7 +188,7 @@
   },
   "layout": [
     {
-      "i": "5d7d502f-fc55-4fbb-9eb7-22be79ce93cb",
+      "i": "f3f3c01c-f84a-49a4-abc1-02f09ece37a9",
       "x": 0,
       "y": 0,
       "w": 12,
@@ -182,7 +200,7 @@
       "minW": 12
     },
     {
-      "i": "c462abbe-403b-46e9-8034-641a8cf7548d",
+      "i": "288eb075-50dc-4215-bcbf-fb4895634caa",
       "x": 0,
       "y": 1,
       "w": 6,
@@ -191,7 +209,7 @@
       "static": false
     },
     {
-      "i": "d910a25c-d83b-479a-8a61-dbf6f1fab8f5",
+      "i": "e01447c5-6bcc-4bf2-a72e-f53bf49e7afc",
       "x": 6,
       "y": 1,
       "w": 6,
@@ -200,7 +218,7 @@
       "static": false
     },
     {
-      "i": "a18c416a-d669-4943-ae8c-85f2a46e7d5f",
+      "i": "ef074252-fb62-4525-b258-3aea63ea837e",
       "x": 0,
       "y": 7,
       "w": 6,
@@ -209,7 +227,16 @@
       "static": false
     },
     {
-      "i": "058e69bb-8e2a-493b-bf07-7b1ca6206dc4",
+      "i": "a302634a-16f4-410d-8f98-51e7480b0b2f",
+      "x": 6,
+      "y": 7,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "53b1e8f5-2e14-4489-9921-ec96ca883151",
       "x": 0,
       "y": 13,
       "w": 12,
@@ -221,7 +248,7 @@
       "minW": 12
     },
     {
-      "i": "75c74c2e-276f-4ef6-b242-7ed58b11189d",
+      "i": "7f4b5774-c642-4e1a-b2a1-29592eac0d2d",
       "x": 0,
       "y": 14,
       "w": 6,
@@ -230,7 +257,7 @@
       "static": false
     },
     {
-      "i": "2a85cd93-59c7-4e6d-a6ed-670c5ce7b479",
+      "i": "6ade415d-7313-4f37-8300-e5ce34a32a43",
       "x": 6,
       "y": 14,
       "w": 6,
@@ -239,7 +266,7 @@
       "static": false
     },
     {
-      "i": "b7d945af-b591-4602-9385-8843d85f93da",
+      "i": "bfe606f0-89ac-4d1b-a1c1-8ff56144d6d9",
       "x": 0,
       "y": 20,
       "w": 12,
@@ -251,7 +278,7 @@
       "minW": 12
     },
     {
-      "i": "c852fbd1-92dd-414f-8384-d10f064ffc74",
+      "i": "5ce6605a-4d71-4d7a-928d-22147a7c4009",
       "x": 0,
       "y": 21,
       "w": 6,
@@ -260,7 +287,7 @@
       "static": false
     },
     {
-      "i": "c82af4ab-7e57-4003-92e1-dfcc9b973009",
+      "i": "eaf30dd9-cc6f-48a8-88f1-22cd3686f578",
       "x": 6,
       "y": 21,
       "w": 6,
@@ -269,7 +296,7 @@
       "static": false
     },
     {
-      "i": "74a53ca1-9712-4846-8fa5-3e50b70e84c5",
+      "i": "2eeaeec2-b9f1-4493-9759-dd4ec8823255",
       "x": 0,
       "y": 27,
       "w": 6,
@@ -278,7 +305,16 @@
       "static": false
     },
     {
-      "i": "74c5b6a9-0001-4900-8476-b6ee574573c8",
+      "i": "7fe1eb4a-1394-448c-ba07-c54ff3924c69",
+      "x": 6,
+      "y": 27,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "9b663634-6d62-4406-b294-1b3d8be0941d",
       "x": 0,
       "y": 33,
       "w": 12,
@@ -290,7 +326,7 @@
       "minW": 12
     },
     {
-      "i": "b5de2162-04c4-43dc-94fd-8df120fb063f",
+      "i": "e00ee82c-6f6c-4899-9efa-1fb481298cb7",
       "x": 0,
       "y": 34,
       "w": 6,
@@ -299,7 +335,7 @@
       "static": false
     },
     {
-      "i": "94d6e1fd-8101-4e28-96fc-f6f6a00a4238",
+      "i": "e2435bec-623a-4897-87c8-da4d50f6b6a9",
       "x": 6,
       "y": 34,
       "w": 6,
@@ -308,7 +344,7 @@
       "static": false
     },
     {
-      "i": "a05956e6-3879-4186-a819-afc3978cf080",
+      "i": "68168e0f-8800-4ee3-a50c-c00eee40f836",
       "x": 0,
       "y": 40,
       "w": 6,
@@ -317,7 +353,7 @@
       "static": false
     },
     {
-      "i": "eb46a689-09bc-41b7-93cb-6982b2304df5",
+      "i": "788a3b8c-9fd2-402d-8859-c08d73c10f19",
       "x": 0,
       "y": 46,
       "w": 12,
@@ -329,7 +365,7 @@
       "minW": 12
     },
     {
-      "i": "4bd7ceb0-79c9-4bc2-90c2-060f37810eb8",
+      "i": "0f0d9dd7-957b-4bd6-9f41-cb3c36355f78",
       "x": 0,
       "y": 47,
       "w": 6,
@@ -338,7 +374,7 @@
       "static": false
     },
     {
-      "i": "3aabf9e1-4a89-4067-8d9c-2bc1d7f6a97d",
+      "i": "99ed1b3d-1ff2-4b0b-a34b-515a24346a43",
       "x": 6,
       "y": 47,
       "w": 6,
@@ -347,7 +383,7 @@
       "static": false
     },
     {
-      "i": "4f5c8c2d-8834-4cc0-94fe-1a9e1274b106",
+      "i": "ee49c2d1-4df2-4130-b32d-d1f02626eaee",
       "x": 0,
       "y": 53,
       "w": 6,
@@ -356,7 +392,7 @@
       "static": false
     },
     {
-      "i": "d6df875d-8518-4222-8894-9f929fe9a50b",
+      "i": "93935aa7-8479-47bf-aab7-28eab4b40514",
       "x": 6,
       "y": 53,
       "w": 6,
@@ -367,14 +403,14 @@
   ],
   "widgets": [
     {
-      "id": "5d7d502f-fc55-4fbb-9eb7-22be79ce93cb",
-      "title": "Harness (AI) \u2014 vendor-neutral; needs AI telemetry flowing",
+      "id": "f3f3c01c-f84a-49a4-abc1-02f09ece37a9",
+      "title": "Harness (AI)",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "c462abbe-403b-46e9-8034-641a8cf7548d",
-      "title": "Token usage",
+      "id": "288eb075-50dc-4215-bcbf-fb4895634caa",
+      "title": "Token usage (needs AI source)",
       "description": "gen_ai.client.token.usage",
       "panelTypes": "graph",
       "yAxisUnit": "short",
@@ -446,13 +482,13 @@
             "query": ""
           }
         ],
-        "id": "82a95ce2-77f9-4449-97f0-5ac2f164db80"
+        "id": "e7bed48e-38ce-4649-ac8a-8c8c5ec39de1"
       }
     },
     {
-      "id": "d910a25c-d83b-479a-8a61-dbf6f1fab8f5",
-      "title": "Operation duration",
-      "description": "gen_ai.client.operation.duration (s)",
+      "id": "e01447c5-6bcc-4bf2-a72e-f53bf49e7afc",
+      "title": "Operation duration (needs AI source)",
+      "description": "gen_ai.client.operation.duration",
       "panelTypes": "graph",
       "yAxisUnit": "s",
       "fillSpans": false,
@@ -523,12 +559,12 @@
             "query": ""
           }
         ],
-        "id": "40f7a827-c5dd-47c6-81c0-aca32f1fd8f1"
+        "id": "865bd01f-84ab-4709-8307-ea8b0c0d2326"
       }
     },
     {
-      "id": "a18c416a-d669-4943-ae8c-85f2a46e7d5f",
-      "title": "Messages",
+      "id": "ef074252-fb62-4525-b258-3aea63ea837e",
+      "title": "Messages by role",
       "description": "harnesssphere.harness.messages",
       "panelTypes": "graph",
       "yAxisUnit": "short",
@@ -609,19 +645,96 @@
             "query": ""
           }
         ],
-        "id": "419082fe-218f-475e-89ed-2793bbc16fef"
+        "id": "d7596ee2-cb2b-4cde-97d7-d498559d41d8"
       }
     },
     {
-      "id": "058e69bb-8e2a-493b-bf07-7b1ca6206dc4",
-      "title": "Tools \u2014 needs AI telemetry flowing",
+      "id": "a302634a-16f4-410d-8f98-51e7480b0b2f",
+      "title": "Sessions",
+      "description": "harnesssphere.harness.sessions",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.harness.sessions",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "32213bb4-74de-4365-be5a-a4584f69aa44"
+      }
+    },
+    {
+      "id": "53b1e8f5-2e14-4489-9921-ec96ca883151",
+      "title": "Tools",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "75c74c2e-276f-4ef6-b242-7ed58b11189d",
-      "title": "Tool execution duration",
-      "description": "harnesssphere.tool.execution.duration (s)",
+      "id": "7f4b5774-c642-4e1a-b2a1-29592eac0d2d",
+      "title": "Tool execution duration (needs AI source)",
+      "description": "harnesssphere.tool.execution.duration",
       "panelTypes": "graph",
       "yAxisUnit": "s",
       "fillSpans": false,
@@ -692,11 +805,11 @@
             "query": ""
           }
         ],
-        "id": "28004fb6-4159-4882-bb22-0608312cc328"
+        "id": "88827460-21c3-4ded-8b01-eed45cbefc33"
       }
     },
     {
-      "id": "2a85cd93-59c7-4e6d-a6ed-670c5ce7b479",
+      "id": "6ade415d-7313-4f37-8300-e5ce34a32a43",
       "title": "Tool calls",
       "description": "harnesssphere.tool.calls",
       "panelTypes": "graph",
@@ -769,21 +882,21 @@
             "query": ""
           }
         ],
-        "id": "934acb47-b492-4669-86c0-a19449e94a8e"
+        "id": "53227dfa-e901-4a48-ada9-b37c074f44d6"
       }
     },
     {
-      "id": "b7d945af-b591-4602-9385-8843d85f93da",
-      "title": "API Calls \u2014 needs gateway/API telemetry flowing",
+      "id": "bfe606f0-89ac-4d1b-a1c1-8ff56144d6d9",
+      "title": "Gateway & API",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "c852fbd1-92dd-414f-8384-d10f064ffc74",
-      "title": "HTTP client latency",
-      "description": "http.client.request.duration (s)",
+      "id": "5ce6605a-4d71-4d7a-928d-22147a7c4009",
+      "title": "Endpoint up",
+      "description": "harnesssphere.endpoint.up (1=up/0=down) by target",
       "panelTypes": "graph",
-      "yAxisUnit": "s",
+      "yAxisUnit": "short",
       "fillSpans": false,
       "isStacked": false,
       "nullZeroValues": "zero",
@@ -804,11 +917,11 @@
             {
               "aggregations": [
                 {
-                  "metricName": "http.client.request.duration",
+                  "metricName": "harnesssphere.endpoint.up",
                   "reduceTo": "avg",
-                  "spaceAggregation": "avg",
+                  "spaceAggregation": "sum",
                   "temporality": null,
-                  "timeAggregation": "avg"
+                  "timeAggregation": "latest"
                 }
               ],
               "dataSource": "metrics",
@@ -822,7 +935,16 @@
                 "op": "AND"
               },
               "functions": [],
-              "groupBy": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "server.address--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "server.address",
+                  "type": "tag"
+                }
+              ],
               "having": {
                 "expression": ""
               },
@@ -852,13 +974,99 @@
             "query": ""
           }
         ],
-        "id": "b96250b8-bad4-4808-9197-02fe508eb8f5"
+        "id": "0609c142-3c50-4423-8575-5439489f1ec4"
       }
     },
     {
-      "id": "c82af4ab-7e57-4003-92e1-dfcc9b973009",
-      "title": "HTTP server latency",
-      "description": "http.server.request.duration (s)",
+      "id": "eaf30dd9-cc6f-48a8-88f1-22cd3686f578",
+      "title": "Endpoint probe latency",
+      "description": "harnesssphere.endpoint.probe.duration by target",
+      "panelTypes": "graph",
+      "yAxisUnit": "s",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.endpoint.probe.duration",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "avg",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "server.address--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "server.address",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "a2705cc3-e898-4292-bdbb-8ce7986e4e9a"
+      }
+    },
+    {
+      "id": "2eeaeec2-b9f1-4493-9759-dd4ec8823255",
+      "title": "HTTP server latency (needs gateway source)",
+      "description": "http.server.request.duration",
       "panelTypes": "graph",
       "yAxisUnit": "s",
       "fillSpans": false,
@@ -929,12 +1137,12 @@
             "query": ""
           }
         ],
-        "id": "332b220e-4ec8-42cc-b563-7b7e6df08651"
+        "id": "b09db32c-e9cd-48bb-940b-1f2908d3de69"
       }
     },
     {
-      "id": "74a53ca1-9712-4846-8fa5-3e50b70e84c5",
-      "title": "API requests",
+      "id": "7fe1eb4a-1394-448c-ba07-c54ff3924c69",
+      "title": "API requests (needs source)",
       "description": "harnesssphere.api.requests",
       "panelTypes": "graph",
       "yAxisUnit": "short",
@@ -1006,19 +1214,19 @@
             "query": ""
           }
         ],
-        "id": "311c49d1-51c1-4482-a949-4e6aae426397"
+        "id": "fe3b206e-368e-4d10-a2d9-333a5d5f43a9"
       }
     },
     {
-      "id": "74c5b6a9-0001-4900-8476-b6ee574573c8",
-      "title": "Watcher (HarnessSphere itself) \u2014 live now",
+      "id": "9b663634-6d62-4406-b294-1b3d8be0941d",
+      "title": "Processes (watcher self + watched)",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "b5de2162-04c4-43dc-94fd-8df120fb063f",
-      "title": "CPU utilization",
-      "description": "process.cpu.utilization",
+      "id": "e00ee82c-6f6c-4899-9efa-1fb481298cb7",
+      "title": "Process CPU by executable",
+      "description": "process.cpu.utilization (self has no exe label)",
       "panelTypes": "graph",
       "yAxisUnit": "percentunit",
       "fillSpans": false,
@@ -1043,9 +1251,9 @@
                 {
                   "metricName": "process.cpu.utilization",
                   "reduceTo": "avg",
-                  "spaceAggregation": "avg",
+                  "spaceAggregation": "sum",
                   "temporality": null,
-                  "timeAggregation": "avg"
+                  "timeAggregation": "latest"
                 }
               ],
               "dataSource": "metrics",
@@ -1059,7 +1267,16 @@
                 "op": "AND"
               },
               "functions": [],
-              "groupBy": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "process.executable.name--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "process.executable.name",
+                  "type": "tag"
+                }
+              ],
               "having": {
                 "expression": ""
               },
@@ -1089,12 +1306,12 @@
             "query": ""
           }
         ],
-        "id": "e5542812-fb96-431c-b3e0-f7cae7a1f60f"
+        "id": "439144bd-043a-4599-98a3-99147285eac9"
       }
     },
     {
-      "id": "94d6e1fd-8101-4e28-96fc-f6f6a00a4238",
-      "title": "Memory (RSS)",
+      "id": "e2435bec-623a-4897-87c8-da4d50f6b6a9",
+      "title": "Process memory (RSS) by executable",
       "description": "process.memory.usage",
       "panelTypes": "graph",
       "yAxisUnit": "bytes",
@@ -1120,9 +1337,9 @@
                 {
                   "metricName": "process.memory.usage",
                   "reduceTo": "avg",
-                  "spaceAggregation": "avg",
+                  "spaceAggregation": "sum",
                   "temporality": null,
-                  "timeAggregation": "avg"
+                  "timeAggregation": "latest"
                 }
               ],
               "dataSource": "metrics",
@@ -1136,7 +1353,16 @@
                 "op": "AND"
               },
               "functions": [],
-              "groupBy": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "process.executable.name--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "process.executable.name",
+                  "type": "tag"
+                }
+              ],
               "having": {
                 "expression": ""
               },
@@ -1166,12 +1392,12 @@
             "query": ""
           }
         ],
-        "id": "43897539-aeb1-4984-9c0a-afda25c46f44"
+        "id": "675664dc-de96-4654-b80f-ef5e3ce9cbe4"
       }
     },
     {
-      "id": "a05956e6-3879-4186-a819-afc3978cf080",
-      "title": "Memory (virtual)",
+      "id": "68168e0f-8800-4ee3-a50c-c00eee40f836",
+      "title": "Process memory (virtual) by executable",
       "description": "process.memory.virtual",
       "panelTypes": "graph",
       "yAxisUnit": "bytes",
@@ -1197,9 +1423,9 @@
                 {
                   "metricName": "process.memory.virtual",
                   "reduceTo": "avg",
-                  "spaceAggregation": "avg",
+                  "spaceAggregation": "sum",
                   "temporality": null,
-                  "timeAggregation": "avg"
+                  "timeAggregation": "latest"
                 }
               ],
               "dataSource": "metrics",
@@ -1213,7 +1439,16 @@
                 "op": "AND"
               },
               "functions": [],
-              "groupBy": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "process.executable.name--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "process.executable.name",
+                  "type": "tag"
+                }
+              ],
               "having": {
                 "expression": ""
               },
@@ -1243,17 +1478,17 @@
             "query": ""
           }
         ],
-        "id": "b9d1512c-afa2-4bf2-8413-4d4c4c716cb3"
+        "id": "7018d6be-3381-4f8f-8dcb-8528162407f1"
       }
     },
     {
-      "id": "eb46a689-09bc-41b7-93cb-6982b2304df5",
-      "title": "Host \u2014 live now",
+      "id": "788a3b8c-9fd2-402d-8859-c08d73c10f19",
+      "title": "Host",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "4bd7ceb0-79c9-4bc2-90c2-060f37810eb8",
+      "id": "0f0d9dd7-957b-4bd6-9f41-cb3c36355f78",
       "title": "CPU utilization",
       "description": "system.cpu.utilization",
       "panelTypes": "graph",
@@ -1326,11 +1561,11 @@
             "query": ""
           }
         ],
-        "id": "365181fe-1fb1-482c-8fc4-7e584b265a07"
+        "id": "2fa1d6ba-1781-46c1-b897-6ca7be3cf896"
       }
     },
     {
-      "id": "3aabf9e1-4a89-4067-8d9c-2bc1d7f6a97d",
+      "id": "99ed1b3d-1ff2-4b0b-a34b-515a24346a43",
       "title": "Memory by state",
       "description": "system.memory.usage (used/free/available)",
       "panelTypes": "graph",
@@ -1412,11 +1647,11 @@
             "query": ""
           }
         ],
-        "id": "14aee0ab-bba6-4271-aaa1-09baed05ca92"
+        "id": "e757591a-c0f5-4a4f-9927-e40ec57f5b05"
       }
     },
     {
-      "id": "4f5c8c2d-8834-4cc0-94fe-1a9e1274b106",
+      "id": "ee49c2d1-4df2-4130-b32d-d1f02626eaee",
       "title": "Memory utilization",
       "description": "system.memory.utilization",
       "panelTypes": "graph",
@@ -1489,11 +1724,11 @@
             "query": ""
           }
         ],
-        "id": "2bd3b109-f8bc-409d-a14a-55dee20fb254"
+        "id": "c74c14ac-dd98-4213-af38-169a8b9bfb38"
       }
     },
     {
-      "id": "d6df875d-8518-4222-8894-9f929fe9a50b",
+      "id": "93935aa7-8479-47bf-aab7-28eab4b40514",
       "title": "Swap used",
       "description": "system.paging.usage",
       "panelTypes": "graph",
@@ -1566,7 +1801,7 @@
             "query": ""
           }
         ],
-        "id": "a6055530-2f8b-4057-9f55-7cd9618c9a45"
+        "id": "f9027777-c475-42ee-b2f3-e9b6656f3358"
       }
     }
   ]

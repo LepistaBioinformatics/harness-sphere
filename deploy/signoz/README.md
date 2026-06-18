@@ -65,25 +65,26 @@ Don't hunt metric-by-metric — import the bundled dashboard:
 1. SigNoz UI -> **Dashboards** -> **New dashboard** -> **Import JSON**.
 2. Upload [`dashboards/harnesssphere-host.json`](dashboards/harnesssphere-host.json).
 
-It's laid out in five vendor-neutral sections, inner → outer (any harness, not just
-OpenClaw — all names are OTel semantic conventions plus the `harnesssphere.*` namespace):
+It's laid out in five vendor-neutral sections, inner → outer (OTel semantic conventions
+plus the `harnesssphere.*` namespace). ✅ = populated by the watcher today, ⏳ = needs an
+AI/gateway source emitting:
 
-1. **Harness (AI)** — `gen_ai.client.token.usage`, `gen_ai.client.operation.duration`,
-   `harnesssphere.harness.messages`.
-2. **Tools** — `harnesssphere.tool.execution.duration`, `harnesssphere.tool.calls`.
-3. **API Calls** — `http.client.request.duration`, `http.server.request.duration`,
-   `harnesssphere.api.requests`.
-4. **Watcher** — the binary's own CPU, RSS and virtual memory (`process.*`).
-5. **Host** — CPU, memory by `system.memory.state`, memory utilization, swap (`system.*`).
+1. **Harness (AI)** — `gen_ai.client.token.usage` ⏳, `gen_ai.client.operation.duration` ⏳,
+   `harnesssphere.harness.messages` (by role) ✅, `harnesssphere.harness.sessions` ✅
+   *(session collector — derived from on-disk session files)*.
+2. **Tools** — `harnesssphere.tool.execution.duration` ⏳, `harnesssphere.tool.calls` ✅.
+3. **Gateway & API** — `harnesssphere.endpoint.up` ✅, `harnesssphere.endpoint.probe.duration` ✅
+   *(endpoint probe)*; `http.server.request.duration` ⏳, `harnesssphere.api.requests` ⏳.
+4. **Processes** — `process.cpu.utilization` / `process.memory.usage` / `process.memory.virtual`,
+   grouped by `process.executable.name` ✅ *(the watcher itself + any watched process, e.g.
+   the PicoClaw gateway; the self collector's series carry no executable label)*.
+5. **Host** — CPU, memory by `system.memory.state`, memory utilization, swap (`system.*`) ✅.
 
-**Watcher and Host light up immediately** from the running binary
-(`service.name=harnesssphere`). **Harness / Tools / API stay empty until an AI source
-(OpenClaw/Hermes/PicoClaw) exports those signals to SigNoz** — directly
-(`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`) or via the HarnessSphere ingest
-plane. The **Services** tab needs *traces*, not metrics — and the ingest plane now
-**forwards spans** (build with `--features ingest,otlp`, set `ingest_enabled=true` on a
-free port): a source pushing OTLP spans to HarnessSphere shows up in *Services*, stamped
-with host context.
+The ⏳ panels need an AI/gateway source exporting those signals to SigNoz — directly
+(`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`) or via the HarnessSphere ingest plane
+(which now forwards **metrics, traces, logs and histograms**). The **Services** tab needs
+*traces* (build with `--features ingest,otlp`, set `ingest_enabled=true` on a free port);
+ingested **logs** show up in the **Logs** tab.
 
 ## Tear down
 
