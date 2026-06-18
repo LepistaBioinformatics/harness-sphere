@@ -138,7 +138,9 @@ bring it down (`tests/crash.rs`, 3 tests); happy-path host+self→stdout; policy
    (branch `feat/process-probe-collectors`), config-driven (`watch_processes`,
    `probe_targets`). **Verified:** watching `picoclaw` + probing `localhost:18790`,
    both landed in SigNoz (`process.executable.name=picoclaw`, `harnesssphere.endpoint.up`).
-   Still TODO: `container` (cgroup v2), `prometheus` (scrape of OpenClaw
+   ✅ `container` (cgroup v2: memory.current/max, cpu.stat, io.stat, memory.events →
+   `container.*` + `harnesssphere.container.*`, verified against a real Docker container's
+   cgroup). Still TODO: `prometheus` (scrape of OpenClaw
    `/api/diagnostics/prometheus`).
 4. Release pipeline: `cross` + `cargo-zigbuild` for the 6 targets.
 

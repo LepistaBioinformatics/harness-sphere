@@ -27,3 +27,7 @@ probe_targets = []               # e.g. ["localhost:18790"]  (the PicoClaw gatew
 # NOTE: tokens are NOT derivable — PicoClaw doesn't write token cost to disk.
 session_dir = ""                 # e.g. "~/.picoclaw/workspace/sessions"
 session_source = "picoclaw"      # harness.name label on the emitted metrics
+
+# Read a container's cgroup v2 directly (no Docker socket) -> container.* metrics.
+container_cgroup = ""            # e.g. "/sys/fs/cgroup/system.slice/docker-<id>.scope"
+container_id = "container"       # container.id label
