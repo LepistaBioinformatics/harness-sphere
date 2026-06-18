@@ -24,6 +24,10 @@ pub struct Config {
     pub ingest_enabled: bool,
     /// Address the OTLP ingest receiver binds to (gRPC).
     pub ingest_endpoint: String,
+    /// Process executable-name substrings to watch (e.g. ["picoclaw"]). Empty = disabled.
+    pub watch_processes: Vec<String>,
+    /// `host:port` endpoints to TCP-probe for liveness/latency. Empty = disabled.
+    pub probe_targets: Vec<String>,
 }
 
 impl Default for Config {
@@ -40,6 +44,8 @@ impl Default for Config {
             // Default to :4318 so a single instance with both exporter+ingest on defaults
             // doesn't form a telemetry loop with the :4317 OTLP exporter target.
             ingest_endpoint: "0.0.0.0:4318".to_owned(),
+            watch_processes: Vec::new(),
+            probe_targets: Vec::new(),
         }
     }
 }

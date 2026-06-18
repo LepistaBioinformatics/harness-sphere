@@ -5,7 +5,11 @@
 //! 1 line in the composition root. The core does not change.
 
 mod host;
+mod probe;
+mod process;
 mod self_watcher;
 
 pub use host::HostCollector;
+pub use probe::EndpointProbeCollector;
+pub use process::ProcessCollector;
 pub use self_watcher::SelfCollector;

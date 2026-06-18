@@ -18,3 +18,4 @@ harnesssphere-domain.workspace = true
 async-trait.workspace = true
 sysinfo.workspace = true
 tracing.workspace = true
+tokio = { workspace = true, features = ["net", "time"] }

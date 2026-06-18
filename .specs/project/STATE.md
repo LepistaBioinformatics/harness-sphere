@@ -83,10 +83,21 @@ failing Optional does not bring it down; happy-path host+self→stdout; policy t
    `signoz_traces`, `service=telemetrygen` in `top_level_operations` (the Services tab).
    - **Pending Tier 1:** OTLP **logs** ingest+export; **histogram** metric ingest (for
      `gen_ai.client.token.usage`); a real AI source emitting (PicoClaw/OpenClaw/Hermes).
-3. Optional collectors: `container` (cgroup v2), `prometheus` (scrape of OpenClaw
+3. Optional collectors: ✅ `process` (watch named processes → `process.*`) and
+   `endpoint-probe` (TCP liveness/latency → `harnesssphere.endpoint.*`) — DONE
+   (branch `feat/process-probe-collectors`), config-driven (`watch_processes`,
+   `probe_targets`). **Verified:** watching `picoclaw` + probing `localhost:18790`,
+   both landed in SigNoz (`process.executable.name=picoclaw`, `harnesssphere.endpoint.up`).
+   Still TODO: `container` (cgroup v2), `prometheus` (scrape of OpenClaw
    `/api/diagnostics/prometheus`).
 4. Release pipeline: `cross` + `cargo-zigbuild` for the 6 targets.
 
-## Product open items
-- PicoClaw: confirm the exposure mechanism (doc returned 403). Optional/fallback.
-- Confirm the exact formats emitted by OpenClaw/Hermes against real OTLP captures.
+## Product findings
+- **PicoClaw has no native telemetry export** (no `diagnostics`/`otel` subcommand or
+  config; gateway `:18790` has no `/metrics`). So no tokens/spans from it.
+- **ClawMetry approach:** reads each runtime's **on-disk session files** (DuckDB store);
+  but PicoClaw/NanoClaw/Cursor **don't write token cost to disk**. PicoClaw session at
+  `~/.picoclaw/workspace/sessions/*.jsonl` holds messages (`{role, content}`, roles
+  user/assistant/tool) and `tool_calls` — so a session-file collector could derive
+  **message/tool counts** (not tokens). Candidate Tier-1 follow-up for PicoClaw.
+- For real AI metrics/traces, use OpenClaw/Hermes (OTLP) → ingest plane.
