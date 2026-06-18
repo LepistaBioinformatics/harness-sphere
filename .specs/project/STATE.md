@@ -98,6 +98,11 @@ failing Optional does not bring it down; happy-path host+self→stdout; policy t
 - **ClawMetry approach:** reads each runtime's **on-disk session files** (DuckDB store);
   but PicoClaw/NanoClaw/Cursor **don't write token cost to disk**. PicoClaw session at
   `~/.picoclaw/workspace/sessions/*.jsonl` holds messages (`{role, content}`, roles
-  user/assistant/tool) and `tool_calls` — so a session-file collector could derive
-  **message/tool counts** (not tokens). Candidate Tier-1 follow-up for PicoClaw.
-- For real AI metrics/traces, use OpenClaw/Hermes (OTLP) → ingest plane.
+  user/assistant/tool) and `tool_calls`.
+  ✅ **`SessionCollector` DONE** (branch `feat/picoclaw-session-collector`): parses the
+  session JSONL → `harnesssphere.harness.messages` (by `role`), `harnesssphere.tool.calls`,
+  `harnesssphere.harness.sessions` (absolute Gauges, tagged `harness.name`). Config
+  `session_dir`/`session_source`. **Verified:** reading `~/.picoclaw/workspace/sessions`
+  → SigNoz showed messages by role (user/assistant/tool) + tool.calls for `harness.name=picoclaw`.
+  Tokens remain absent (not on disk). Dashboard messages/tool panels switched to `latest`.
+- For real AI metrics/traces (incl. tokens), use OpenClaw/Hermes (OTLP) → ingest plane.

@@ -21,3 +21,9 @@ ingest_endpoint = "0.0.0.0:4318" # gRPC bind address for the receiver
 watch_processes = []             # e.g. ["picoclaw"]
 # TCP liveness + latency probes of local endpoints -> harnesssphere.endpoint.{up,probe.duration}
 probe_targets = []               # e.g. ["localhost:18790"]  (the PicoClaw gateway)
+
+# Derive AI activity from a harness's on-disk session files (the ClawMetry approach).
+# Emits harnesssphere.harness.messages (by role), tool.calls, harness.sessions.
+# NOTE: tokens are NOT derivable — PicoClaw doesn't write token cost to disk.
+session_dir = ""                 # e.g. "~/.picoclaw/workspace/sessions"
+session_source = "picoclaw"      # harness.name label on the emitted metrics
