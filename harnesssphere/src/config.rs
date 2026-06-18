@@ -36,7 +36,8 @@ pub struct Config {
     /// A container's cgroup v2 directory to read (e.g.
     /// "/sys/fs/cgroup/system.slice/docker-<id>.scope"). Empty = disabled.
     pub container_cgroup: String,
-    /// `container.id` label for the cgroup metrics.
+    /// `container.id` label for the cgroup metrics. Empty → derived from the cgroup
+    /// directory's name.
     pub container_id: String,
 }
 
@@ -59,7 +60,8 @@ impl Default for Config {
             session_dir: String::new(),
             session_source: "picoclaw".to_owned(),
             container_cgroup: String::new(),
-            container_id: "container".to_owned(),
+            // Empty → the collector derives the id from the cgroup directory's name.
+            container_id: String::new(),
         }
     }
 }

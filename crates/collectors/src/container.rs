@@ -21,8 +21,17 @@ pub struct ContainerCollector {
 }
 
 impl ContainerCollector {
-    /// `cgroup` is the container's cgroup v2 directory; `container_id` labels the metrics.
+    /// `cgroup` is the container's cgroup v2 directory; `container_id` labels the metrics
+    /// (falls back to the cgroup directory's name when empty).
     pub fn new(cgroup: impl Into<String>, container_id: impl Into<String>, interval: Duration) -> Self {
+        let cgroup = PathBuf::from(cgroup.into());
+        let mut id = container_id.into();
+        if id.is_empty() {
+            id = cgroup
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "container".to_owned());
+        }
         ContainerCollector {
             descriptor: SourceDescriptor {
                 name: "container",
@@ -30,13 +39,23 @@ impl ContainerCollector {
                 criticality: Criticality::Optional,
                 default_interval: interval,
             },
-            cgroup: PathBuf::from(cgroup.into()),
-            container_id: container_id.into(),
+            cgroup,
+            container_id: id,
         }
     }
 
-    fn read(&self, file: &str) -> Option<String> {
-        std::fs::read_to_string(self.cgroup.join(file)).ok()
+    /// Async, non-blocking read of a cgroup file. Missing optional files (e.g. `io.stat`)
+    /// return `None` quietly; unexpected errors are logged at debug.
+    async fn read(&self, file: &str) -> Option<String> {
+        let path = self.cgroup.join(file);
+        match tokio::fs::read_to_string(&path).await {
+            Ok(s) => Some(s),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+            Err(e) => {
+                tracing::debug!(path = %path.display(), error = %e, "cgroup file read failed");
+                None
+            }
+        }
     }
 }
 
@@ -103,15 +122,24 @@ impl SignalSource for ContainerCollector {
     async fn collect(&mut self, sink: &dyn SignalSink) -> Result<(), CollectError> {
         let id = self.container_id.clone();
 
-        if let Some(used) = self.read("memory.current").as_deref().and_then(parse_u64) {
-            sink.emit(
-                Metric::now("container.memory.usage", MetricKind::UpDownCounter, used as f64)
-                    .with_unit("By")
-                    .attr("container.id", id.clone())
-                    .into_signal(),
-            );
-        }
-        if let Some(limit) = self.read("memory.max").as_deref().and_then(parse_mem_max) {
+        // memory.current gates the collector: if it can't be read, the target is gone —
+        // report Unavailable so the runtime degrades/backs off this Optional source.
+        let used = self
+            .read("memory.current")
+            .await
+            .as_deref()
+            .and_then(parse_u64)
+            .ok_or_else(|| {
+                CollectError::Unavailable(format!("cgroup {} unreadable", self.cgroup.display()))
+            })?;
+        sink.emit(
+            Metric::now("container.memory.usage", MetricKind::UpDownCounter, used as f64)
+                .with_unit("By")
+                .attr("container.id", id.clone())
+                .into_signal(),
+        );
+
+        if let Some(limit) = self.read("memory.max").await.as_deref().and_then(parse_mem_max) {
             sink.emit(
                 Metric::now("harnesssphere.container.memory.limit", MetricKind::Gauge, limit as f64)
                     .with_unit("By")
@@ -119,7 +147,7 @@ impl SignalSource for ContainerCollector {
                     .into_signal(),
             );
         }
-        if let Some(ev) = self.read("memory.events").as_deref().map(parse_kv_lines) {
+        if let Some(ev) = self.read("memory.events").await.as_deref().map(parse_kv_lines) {
             if let Some(&oom) = ev.get("oom_kill") {
                 sink.emit(
                     Metric::now("harnesssphere.container.memory.oom", MetricKind::Counter, oom as f64)
@@ -128,7 +156,7 @@ impl SignalSource for ContainerCollector {
                 );
             }
         }
-        if let Some(cpu) = self.read("cpu.stat").as_deref().map(parse_kv_lines) {
+        if let Some(cpu) = self.read("cpu.stat").await.as_deref().map(parse_kv_lines) {
             if let Some(&usec) = cpu.get("usage_usec") {
                 sink.emit(
                     Metric::now("container.cpu.time", MetricKind::Counter, usec as f64 / 1_000_000.0)
@@ -150,8 +178,7 @@ impl SignalSource for ContainerCollector {
                 );
             }
         }
-        if let Some(io) = self.read("io.stat").as_deref().map(parse_io_stat) {
-            let (rbytes, wbytes) = io;
+        if let Some((rbytes, wbytes)) = self.read("io.stat").await.as_deref().map(parse_io_stat) {
             sink.emit(
                 Metric::now("container.disk.io", MetricKind::Counter, rbytes as f64)
                     .with_unit("By")
@@ -174,6 +201,8 @@ impl SignalSource for ContainerCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use harnesssphere_domain::Signal;
+    use std::sync::Mutex;
 
     #[test]
     fn parses_cgroup_files() {
@@ -187,5 +216,53 @@ mod tests {
 
         let (r, w) = parse_io_stat("8:0 rbytes=100 wbytes=200 rios=1 wios=2\n259:0 rbytes=50 wbytes=0\n");
         assert_eq!((r, w), (150, 200));
+    }
+
+    struct VecSink(Mutex<Vec<Signal>>);
+    impl SignalSink for VecSink {
+        fn emit(&self, signal: Signal) {
+            self.0.lock().unwrap().push(signal);
+        }
+    }
+
+    #[tokio::test]
+    async fn collects_from_a_fake_cgroup_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path();
+        std::fs::write(p.join("memory.current"), "2048\n").unwrap();
+        std::fs::write(p.join("memory.max"), "max\n").unwrap(); // unlimited → no limit metric
+        std::fs::write(p.join("memory.events"), "oom 0\noom_kill 2\n").unwrap();
+        std::fs::write(p.join("cpu.stat"), "usage_usec 3000000\nthrottled_usec 1000000\n").unwrap();
+        std::fs::write(p.join("io.stat"), "8:0 rbytes=10 wbytes=20\n").unwrap();
+
+        let mut c = ContainerCollector::new(
+            p.to_string_lossy().into_owned(),
+            "", // empty -> falls back to the dir name
+            Duration::from_secs(5),
+        );
+        assert!(matches!(c.probe().await, ProbeResult::Ready));
+
+        let sink = VecSink(Mutex::new(Vec::new()));
+        c.collect(&sink).await.unwrap();
+        let sigs = sink.0.into_inner().unwrap();
+
+        let names: Vec<&str> = sigs
+            .iter()
+            .filter_map(|s| match s {
+                Signal::Metric(m) => Some(m.name.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert!(names.contains(&"container.memory.usage"));
+        assert!(names.contains(&"harnesssphere.container.memory.oom"));
+        assert!(names.contains(&"container.cpu.time"));
+        assert!(names.contains(&"container.disk.io"));
+        // memory.max == "max" (unlimited) -> the limit metric is omitted on purpose.
+        assert!(!names.contains(&"harnesssphere.container.memory.limit"));
+
+        // container.id is present (falls back to the cgroup dir's name when not configured).
+        let id_ok = sigs.iter().any(|s| matches!(s, Signal::Metric(m)
+            if m.attributes.iter().any(|(k, _)| k == "container.id")));
+        assert!(id_ok);
     }
 }

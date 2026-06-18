@@ -30,4 +30,4 @@ session_source = "picoclaw"      # harness.name label on the emitted metrics
 
 # Read a container's cgroup v2 directly (no Docker socket) -> container.* metrics.
 container_cgroup = ""            # e.g. "/sys/fs/cgroup/system.slice/docker-<id>.scope"
-container_id = "container"       # container.id label
+container_id = ""               # container.id label (empty -> derived from the cgroup dir name)
