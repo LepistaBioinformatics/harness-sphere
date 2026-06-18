@@ -10,8 +10,8 @@
 
 use async_trait::async_trait;
 use harnesssphere_domain::{
-    AttrValue, Attributes, Enricher, Metric, MetricKind, Receiver, ReceiverDescriptor, RecvError,
-    Signal, Span, SpanKind, SpanStatus, SignalSink,
+    AttrValue, Attributes, Enricher, HistogramPoint, LogRecord, Metric, MetricKind, Receiver,
+    ReceiverDescriptor, RecvError, Severity, Signal, SignalSink, Span, SpanKind, SpanStatus,
 };
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -19,6 +19,10 @@ use std::time::{Duration, SystemTime};
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 
+use opentelemetry_proto::tonic::collector::logs::v1::{
+    logs_service_server::{LogsService, LogsServiceServer},
+    ExportLogsServiceRequest, ExportLogsServiceResponse,
+};
 use opentelemetry_proto::tonic::collector::metrics::v1::{
     metrics_service_server::{MetricsService, MetricsServiceServer},
     ExportMetricsServiceRequest, ExportMetricsServiceResponse,
@@ -28,7 +32,10 @@ use opentelemetry_proto::tonic::collector::trace::v1::{
     ExportTraceServiceRequest, ExportTraceServiceResponse,
 };
 use opentelemetry_proto::tonic::common::v1::{any_value, KeyValue as PbKeyValue};
-use opentelemetry_proto::tonic::metrics::v1::{metric, number_data_point, NumberDataPoint};
+use opentelemetry_proto::tonic::logs::v1::{LogRecord as PbLogRecord, SeverityNumber};
+use opentelemetry_proto::tonic::metrics::v1::{
+    metric, number_data_point, HistogramDataPoint, NumberDataPoint,
+};
 use opentelemetry_proto::tonic::trace::v1::{span as pb_span, status as pb_status, Span as PbSpan};
 
 pub struct OtlpReceiver {
@@ -67,12 +74,17 @@ impl Receiver for OtlpReceiver {
             enricher: self.enricher.clone(),
         };
         let traces = TraceSvc {
+            sink: sink.clone(),
+            enricher: self.enricher.clone(),
+        };
+        let logs = LogsSvc {
             sink,
             enricher: self.enricher.clone(),
         };
         Server::builder()
             .add_service(MetricsServiceServer::new(metrics))
             .add_service(TraceServiceServer::new(traces))
+            .add_service(LogsServiceServer::new(logs))
             .serve(addr)
             .await
             .map_err(|e| RecvError::Failed(e.to_string()))
@@ -218,7 +230,12 @@ fn convert(req: ExportMetricsServiceRequest) -> Vec<Signal> {
                             push_number(&mut out, &name, &unit, kind, dp, &resource_attrs);
                         }
                     }
-                    // Histogram / ExponentialHistogram / Summary: not mapped in v1.
+                    Some(metric::Data::Histogram(h)) => {
+                        for dp in h.data_points {
+                            push_histogram(&mut out, &name, &unit, dp, &resource_attrs);
+                        }
+                    }
+                    // ExponentialHistogram / Summary: not mapped.
                     _ => {}
                 }
             }
@@ -255,6 +272,34 @@ fn push_number(
     out.push(metric.into_signal());
 }
 
+fn push_histogram(
+    out: &mut Vec<Signal>,
+    name: &str,
+    unit: &Option<String>,
+    dp: HistogramDataPoint,
+    resource_attrs: &Attributes,
+) {
+    let mut attributes = resource_attrs.clone();
+    for kv in dp.attributes {
+        if let Some(pair) = to_attr(kv) {
+            attributes.push(pair);
+        }
+    }
+    out.push(Signal::Histogram(HistogramPoint {
+        name: name.to_owned(),
+        unit: unit.clone(),
+        count: dp.count,
+        sum: dp.sum.unwrap_or(0.0),
+        bucket_counts: dp.bucket_counts,
+        explicit_bounds: dp.explicit_bounds,
+        min: dp.min,
+        max: dp.max,
+        start_time: unix_nano_to_time(dp.start_time_unix_nano),
+        timestamp: unix_nano_to_time(dp.time_unix_nano),
+        attributes,
+    }));
+}
+
 fn to_attr(kv: PbKeyValue) -> Option<(String, AttrValue)> {
     let value = kv.value?.value?;
     let av = match value {
@@ -265,6 +310,109 @@ fn to_attr(kv: PbKeyValue) -> Option<(String, AttrValue)> {
         _ => return None,
     };
     Some((kv.key, av))
+}
+
+// --- logs ---
+
+struct LogsSvc {
+    sink: Arc<dyn SignalSink>,
+    enricher: Arc<Enricher>,
+}
+
+#[tonic::async_trait]
+impl LogsService for LogsSvc {
+    async fn export(
+        &self,
+        request: Request<ExportLogsServiceRequest>,
+    ) -> Result<Response<ExportLogsServiceResponse>, Status> {
+        let mut signals = convert_logs(request.into_inner());
+        for sig in &mut signals {
+            self.enricher.enrich(sig);
+        }
+        let n = signals.len();
+        for sig in signals {
+            self.sink.emit(sig);
+        }
+        tracing::debug!(count = n, "ingested OTLP logs");
+        Ok(Response::new(ExportLogsServiceResponse::default()))
+    }
+}
+
+fn map_severity(num: i32) -> Severity {
+    match SeverityNumber::try_from(num).unwrap_or(SeverityNumber::Unspecified) {
+        SeverityNumber::Trace
+        | SeverityNumber::Trace2
+        | SeverityNumber::Trace3
+        | SeverityNumber::Trace4
+        | SeverityNumber::Debug
+        | SeverityNumber::Debug2
+        | SeverityNumber::Debug3
+        | SeverityNumber::Debug4 => {
+            if num <= SeverityNumber::Trace4 as i32 {
+                Severity::Trace
+            } else {
+                Severity::Debug
+            }
+        }
+        SeverityNumber::Warn
+        | SeverityNumber::Warn2
+        | SeverityNumber::Warn3
+        | SeverityNumber::Warn4 => Severity::Warn,
+        SeverityNumber::Error
+        | SeverityNumber::Error2
+        | SeverityNumber::Error3
+        | SeverityNumber::Error4
+        | SeverityNumber::Fatal
+        | SeverityNumber::Fatal2
+        | SeverityNumber::Fatal3
+        | SeverityNumber::Fatal4 => Severity::Error,
+        // Info* and Unspecified
+        _ => Severity::Info,
+    }
+}
+
+fn log_body(rec: &PbLogRecord) -> String {
+    match rec.body.as_ref().and_then(|b| b.value.as_ref()) {
+        Some(any_value::Value::StringValue(s)) => s.clone(),
+        Some(other) => format!("{other:?}"),
+        None => String::new(),
+    }
+}
+
+fn convert_logs(req: ExportLogsServiceRequest) -> Vec<Signal> {
+    let mut out = Vec::new();
+    for rl in req.resource_logs {
+        let resource_attrs: Attributes = rl
+            .resource
+            .map(|r| r.attributes.into_iter().filter_map(to_attr).collect())
+            .unwrap_or_default();
+        for sl in rl.scope_logs {
+            for rec in sl.log_records {
+                let body = log_body(&rec);
+                let severity = map_severity(rec.severity_number);
+                let mut attributes = resource_attrs.clone();
+                for kv in rec.attributes {
+                    if let Some(pair) = to_attr(kv) {
+                        attributes.push(pair);
+                    }
+                }
+                let ts = if rec.time_unix_nano != 0 {
+                    rec.time_unix_nano
+                } else {
+                    rec.observed_time_unix_nano
+                };
+                out.push(Signal::Log(LogRecord {
+                    severity,
+                    body,
+                    attributes,
+                    timestamp: unix_nano_to_time(ts),
+                    trace_id: rec.trace_id,
+                    span_id: rec.span_id,
+                }));
+            }
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -379,5 +527,48 @@ mod tests {
             panic!("metric");
         };
         assert_eq!(l.kind, MetricKind::UpDownCounter);
+    }
+
+    #[test]
+    fn maps_histogram_preserving_count_sum_buckets_and_identity() {
+        use opentelemetry_proto::tonic::metrics::v1::{Histogram as PbHistogram, HistogramDataPoint};
+        let dp = HistogramDataPoint {
+            attributes: vec![str_kv("gen_ai.token.type", "input")],
+            count: 9,
+            sum: Some(420.0),
+            bucket_counts: vec![1, 3, 5],
+            explicit_bounds: vec![10.0, 100.0],
+            ..Default::default()
+        };
+        let req = request_with(
+            PbMetric {
+                name: "gen_ai.client.token.usage".into(),
+                unit: "{token}".into(),
+                data: Some(metric::Data::Histogram(PbHistogram {
+                    data_points: vec![dp],
+                    ..Default::default()
+                })),
+                ..Default::default()
+            },
+            vec![str_kv("service.name", "openclaw")],
+        );
+
+        let signals = convert(req);
+        assert_eq!(signals.len(), 1);
+        let Signal::Histogram(h) = &signals[0] else {
+            panic!("expected a histogram");
+        };
+        assert_eq!(h.name, "gen_ai.client.token.usage");
+        assert_eq!(h.count, 9);
+        assert_eq!(h.sum, 420.0);
+        assert_eq!(h.bucket_counts, vec![1, 3, 5]);
+        assert_eq!(h.unit.as_deref(), Some("{token}"));
+        assert!(h.attributes.iter().any(|(k, _)| k == "gen_ai.token.type"));
+        assert!(
+            h.attributes
+                .iter()
+                .any(|(k, v)| k == "service.name" && matches!(v, AttrValue::Str(s) if s == "openclaw")),
+            "resource identity must be merged onto the histogram"
+        );
     }
 }

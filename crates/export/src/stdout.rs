@@ -32,6 +32,12 @@ impl SignalExporter for StdoutExporter {
                         m.attributes
                     );
                 }
+                Signal::Histogram(h) => {
+                    println!(
+                        "HISTO  {} count={} sum={} {:?}",
+                        h.name, h.count, h.sum, h.attributes
+                    );
+                }
                 Signal::Log(l) => {
                     println!("LOG    {:?} {} {:?}", l.severity, l.body, l.attributes);
                 }

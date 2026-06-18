@@ -20,5 +20,5 @@ tracing.workspace = true
 opentelemetry = { version = "0.32", optional = true }
 opentelemetry_sdk = { version = "0.32", features = ["rt-tokio", "metrics"], optional = true }
 opentelemetry-otlp = { version = "0.32", features = ["metrics", "grpc-tonic"], optional = true }
-opentelemetry-proto = { version = "0.32", default-features = false, features = ["gen-tonic", "trace"], optional = true }
+opentelemetry-proto = { version = "0.32", default-features = false, features = ["gen-tonic", "trace", "logs", "metrics"], optional = true }
 tonic = { version = "0.14", optional = true }

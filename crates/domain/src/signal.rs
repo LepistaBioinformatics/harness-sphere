@@ -103,6 +103,9 @@ pub struct LogRecord {
     pub body: String,
     pub attributes: Attributes,
     pub timestamp: SystemTime,
+    /// Optional trace correlation (raw bytes; empty if none).
+    pub trace_id: Vec<u8>,
+    pub span_id: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -135,10 +138,27 @@ pub struct Span {
     pub attributes: Attributes,
 }
 
+/// A pre-aggregated explicit-bucket histogram point (as it arrives over OTLP).
+#[derive(Debug, Clone)]
+pub struct HistogramPoint {
+    pub name: String,
+    pub unit: Option<String>,
+    pub count: u64,
+    pub sum: f64,
+    pub bucket_counts: Vec<u64>,
+    pub explicit_bounds: Vec<f64>,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub start_time: SystemTime,
+    pub timestamp: SystemTime,
+    pub attributes: Attributes,
+}
+
 /// Canonical signal — the unit that flows from sources/receivers to the exporter.
 #[derive(Debug, Clone)]
 pub enum Signal {
     Metric(Metric),
+    Histogram(HistogramPoint),
     Log(LogRecord),
     Span(Span),
 }
@@ -148,6 +168,7 @@ impl Signal {
     pub fn push_attr(&mut self, key: impl Into<String>, value: impl Into<AttrValue>) {
         let attrs = match self {
             Signal::Metric(m) => &mut m.attributes,
+            Signal::Histogram(h) => &mut h.attributes,
             Signal::Log(l) => &mut l.attributes,
             Signal::Span(s) => &mut s.attributes,
         };
@@ -158,6 +179,7 @@ impl Signal {
     pub fn attributes(&self) -> &Attributes {
         match self {
             Signal::Metric(m) => &m.attributes,
+            Signal::Histogram(h) => &h.attributes,
             Signal::Log(l) => &l.attributes,
             Signal::Span(s) => &s.attributes,
         }
