@@ -33,6 +33,12 @@ pub struct Config {
     pub session_dir: String,
     /// Label for the harness whose sessions are read (`harness.name`).
     pub session_source: String,
+    /// A container's cgroup v2 directory to read (e.g.
+    /// "/sys/fs/cgroup/system.slice/docker-<id>.scope"). Empty = disabled.
+    pub container_cgroup: String,
+    /// `container.id` label for the cgroup metrics. Empty → derived from the cgroup
+    /// directory's name.
+    pub container_id: String,
 }
 
 impl Default for Config {
@@ -53,6 +59,9 @@ impl Default for Config {
             probe_targets: Vec::new(),
             session_dir: String::new(),
             session_source: "picoclaw".to_owned(),
+            container_cgroup: String::new(),
+            // Empty → the collector derives the id from the cgroup directory's name.
+            container_id: String::new(),
         }
     }
 }
