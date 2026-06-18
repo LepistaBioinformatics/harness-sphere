@@ -1,9 +1,9 @@
 //! OTLP output adapter (feature `otlp`). The only place that depends on the
 //! `opentelemetry*` SDK (pre-1.0) — isolates the churn from the domain.
 //!
-//! Scope: **metrics** via `SdkMeterProvider` + synchronous instruments, and **traces**
-//! (spans) via a plain OTLP/gRPC trace client. Spans are grouped by `service.name` onto
-//! the Resource so SigNoz's Services/APM view works. OTLP logs are the next extension.
+//! Scope: **metrics** via `SdkMeterProvider` + synchronous instruments; **traces**,
+//! **logs**, and ingested **histograms** via plain OTLP/gRPC clients. Spans/logs/histograms
+//! are grouped by `service.name` onto the Resource so SigNoz's Services/APM view works.
 //!
 //! Modeling decision: the sources emit **sampled absolute values**. Mapping an absolute
 //! `UpDownCounter` to `add()` would sum them — wrong. So absolute values (Gauge and
@@ -13,8 +13,8 @@
 
 use async_trait::async_trait;
 use harnesssphere_domain::{
-    AttrValue, Attributes, ExportError, MetricKind, Signal, Span, SpanKind, SpanStatus,
-    SignalExporter,
+    AttrValue, Attributes, ExportError, HistogramPoint, LogRecord, MetricKind, Severity, Signal,
+    SignalExporter, Span, SpanKind, SpanStatus,
 };
 use opentelemetry::metrics::{Counter, Gauge, Histogram, Meter, MeterProvider as _};
 use opentelemetry::KeyValue;
@@ -25,10 +25,23 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 
+use opentelemetry_proto::tonic::collector::logs::v1::{
+    logs_service_client::LogsServiceClient, ExportLogsServiceRequest,
+};
+use opentelemetry_proto::tonic::collector::metrics::v1::{
+    metrics_service_client::MetricsServiceClient, ExportMetricsServiceRequest,
+};
 use opentelemetry_proto::tonic::collector::trace::v1::{
     trace_service_client::TraceServiceClient, ExportTraceServiceRequest,
 };
 use opentelemetry_proto::tonic::common::v1::{any_value, AnyValue, KeyValue as PbKeyValue};
+use opentelemetry_proto::tonic::logs::v1::{
+    LogRecord as PbLogRecord, ResourceLogs, ScopeLogs, SeverityNumber,
+};
+use opentelemetry_proto::tonic::metrics::v1::{
+    metric as pb_metric, AggregationTemporality, Histogram as PbHistogram, HistogramDataPoint,
+    Metric as PbMetric, ResourceMetrics, ScopeMetrics,
+};
 use opentelemetry_proto::tonic::resource::v1::Resource as PbResource;
 use opentelemetry_proto::tonic::trace::v1::{
     span as pb_span, status as pb_status, ResourceSpans, ScopeSpans, Span as PbSpan,
@@ -43,6 +56,8 @@ pub struct OtlpExporter {
     counters: Mutex<HashMap<String, Counter<f64>>>,
     histograms: Mutex<HashMap<String, Histogram<f64>>>,
     trace_client: TraceServiceClient<Channel>,
+    logs_client: LogsServiceClient<Channel>,
+    metrics_client: MetricsServiceClient<Channel>,
 }
 
 impl OtlpExporter {
@@ -77,12 +92,14 @@ impl OtlpExporter {
 
         let meter = provider.meter("harnesssphere");
 
-        // Spans go out over a plain OTLP/gRPC trace client (lazy connect — no await here).
+        // Spans/logs/histograms go out over plain OTLP/gRPC clients (lazy connect, no await).
         let channel = Channel::from_shared(endpoint.to_string())
             .map_err(|e| ExportError::Failed(format!("bad OTLP endpoint: {e}")))?
             .timeout(Duration::from_secs(5))
             .connect_lazy();
-        let trace_client = TraceServiceClient::new(channel);
+        let trace_client = TraceServiceClient::new(channel.clone());
+        let logs_client = LogsServiceClient::new(channel.clone());
+        let metrics_client = MetricsServiceClient::new(channel);
 
         Ok(OtlpExporter {
             provider,
@@ -91,6 +108,8 @@ impl OtlpExporter {
             counters: Mutex::new(HashMap::new()),
             histograms: Mutex::new(HashMap::new()),
             trace_client,
+            logs_client,
+            metrics_client,
         })
     }
 
@@ -255,10 +274,125 @@ fn build_trace_request(spans: Vec<Span>) -> ExportTraceServiceRequest {
     ExportTraceServiceRequest { resource_spans }
 }
 
+// --- log export helpers ---
+
+fn pb_severity(s: Severity) -> i32 {
+    (match s {
+        Severity::Trace => SeverityNumber::Trace,
+        Severity::Debug => SeverityNumber::Debug,
+        Severity::Info => SeverityNumber::Info,
+        Severity::Warn => SeverityNumber::Warn,
+        Severity::Error => SeverityNumber::Error,
+    }) as i32
+}
+
+fn build_logs_request(logs: Vec<LogRecord>) -> ExportLogsServiceRequest {
+    let mut by_service: HashMap<String, Vec<PbLogRecord>> = HashMap::new();
+    let mut host_of: HashMap<String, String> = HashMap::new();
+    for l in logs {
+        let service = attr_str(&l.attributes, "service.name").unwrap_or_else(|| "unknown".into());
+        if let Some(h) = attr_str(&l.attributes, "host.name") {
+            host_of.entry(service.clone()).or_insert(h);
+        }
+        let rec = PbLogRecord {
+            time_unix_nano: nanos(l.timestamp),
+            observed_time_unix_nano: nanos(l.timestamp),
+            severity_number: pb_severity(l.severity),
+            body: Some(AnyValue {
+                value: Some(any_value::Value::StringValue(l.body)),
+            }),
+            attributes: pb_attrs(&l.attributes),
+            trace_id: l.trace_id,
+            span_id: l.span_id,
+            ..Default::default()
+        };
+        by_service.entry(service).or_default().push(rec);
+    }
+    let resource_logs = by_service
+        .into_iter()
+        .map(|(service, log_records)| {
+            let mut attributes = vec![res_kv("service.name", &service)];
+            if let Some(h) = host_of.get(&service) {
+                attributes.push(res_kv("host.name", h));
+            }
+            ResourceLogs {
+                resource: Some(PbResource {
+                    attributes,
+                    ..Default::default()
+                }),
+                scope_logs: vec![ScopeLogs {
+                    log_records,
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }
+        })
+        .collect();
+    ExportLogsServiceRequest { resource_logs }
+}
+
+// --- histogram export helpers (forwards a pre-aggregated histogram as an OTLP metric) ---
+
+fn build_histogram_request(histos: Vec<HistogramPoint>) -> ExportMetricsServiceRequest {
+    let mut by_service: HashMap<String, Vec<PbMetric>> = HashMap::new();
+    let mut host_of: HashMap<String, String> = HashMap::new();
+    for hp in histos {
+        let service = attr_str(&hp.attributes, "service.name").unwrap_or_else(|| "unknown".into());
+        if let Some(h) = attr_str(&hp.attributes, "host.name") {
+            host_of.entry(service.clone()).or_insert(h);
+        }
+        let dp = HistogramDataPoint {
+            attributes: pb_attrs(&hp.attributes),
+            start_time_unix_nano: nanos(hp.start_time),
+            time_unix_nano: nanos(hp.timestamp),
+            count: hp.count,
+            sum: Some(hp.sum),
+            bucket_counts: hp.bucket_counts,
+            explicit_bounds: hp.explicit_bounds,
+            min: hp.min,
+            max: hp.max,
+            ..Default::default()
+        };
+        let metric = PbMetric {
+            name: hp.name,
+            unit: hp.unit.unwrap_or_default(),
+            data: Some(pb_metric::Data::Histogram(PbHistogram {
+                data_points: vec![dp],
+                aggregation_temporality: AggregationTemporality::Cumulative as i32,
+            })),
+            ..Default::default()
+        };
+        by_service.entry(service).or_default().push(metric);
+    }
+    let resource_metrics = by_service
+        .into_iter()
+        .map(|(service, metrics)| {
+            let mut attributes = vec![res_kv("service.name", &service)];
+            if let Some(h) = host_of.get(&service) {
+                attributes.push(res_kv("host.name", h));
+            }
+            ResourceMetrics {
+                resource: Some(PbResource {
+                    attributes,
+                    ..Default::default()
+                }),
+                scope_metrics: vec![ScopeMetrics {
+                    metrics,
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }
+        })
+        .collect();
+    ExportMetricsServiceRequest { resource_metrics }
+}
+
 #[async_trait]
 impl SignalExporter for OtlpExporter {
     async fn export(&self, batch: Vec<Signal>) -> Result<(), ExportError> {
         let mut spans: Vec<Span> = Vec::new();
+        let mut logs: Vec<LogRecord> = Vec::new();
+        let mut histos: Vec<HistogramPoint> = Vec::new();
         for sig in batch {
             match sig {
                 Signal::Metric(m) => {
@@ -274,11 +408,9 @@ impl SignalExporter for OtlpExporter {
                         }
                     }
                 }
+                Signal::Histogram(h) => histos.push(h),
                 Signal::Span(s) => spans.push(s),
-                // Logs OTLP path is the next extension.
-                Signal::Log(_) => {
-                    tracing::debug!("log signal ignored by OtlpExporter (logs path pending)");
-                }
+                Signal::Log(l) => logs.push(l),
             }
         }
 
@@ -289,6 +421,22 @@ impl SignalExporter for OtlpExporter {
                 .export(req)
                 .await
                 .map_err(|e| ExportError::Failed(format!("OTLP trace export: {e}")))?;
+        }
+        if !logs.is_empty() {
+            let req = build_logs_request(logs);
+            let mut client = self.logs_client.clone();
+            client
+                .export(req)
+                .await
+                .map_err(|e| ExportError::Failed(format!("OTLP logs export: {e}")))?;
+        }
+        if !histos.is_empty() {
+            let req = build_histogram_request(histos);
+            let mut client = self.metrics_client.clone();
+            client
+                .export(req)
+                .await
+                .map_err(|e| ExportError::Failed(format!("OTLP histogram export: {e}")))?;
         }
         Ok(())
     }

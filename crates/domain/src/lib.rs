@@ -15,6 +15,6 @@ pub use ports::{
     SignalExporter, SignalSink, SignalSource, SourceDescriptor,
 };
 pub use signal::{
-    AttrValue, Attributes, Layer, LogRecord, Metric, MetricKind, Severity, Signal, Span, SpanKind,
-    SpanStatus,
+    AttrValue, Attributes, HistogramPoint, Layer, LogRecord, Metric, MetricKind, Severity, Signal,
+    Span, SpanKind, SpanStatus,
 };

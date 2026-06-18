@@ -83,8 +83,16 @@ bring it down (`tests/crash.rs`, 3 tests); happy-path host+self→stdout; policy
    by `service.name` onto the **Resource** (required for SigNoz's Services/APM view).
    **Verified:** `telemetrygen` → ingest `:4319` → enrich → export → SigNoz: 100 spans in
    `signoz_traces`, `service=telemetrygen` in `top_level_operations` (the Services tab).
-   - **Pending Tier 1:** OTLP **logs** ingest+export; **histogram** metric ingest (for
-     `gen_ai.client.token.usage`); a real AI source emitting (PicoClaw/OpenClaw/Hermes).
+2c. **Logs + histograms end-to-end (Tier 1 closed)** — ✅ **DONE** (branch
+   `feat/logs-histograms`): canonical `Signal::Log` gains trace/span ids; new
+   `Signal::Histogram` (count/sum/buckets/bounds/min/max). Ingest adds OTLP `LogsService`
+   + histogram (`metric::Data::Histogram`) conversion. Export forwards logs via
+   `LogsServiceClient` and histograms via `MetricsServiceClient`, grouped by `service.name`
+   onto the Resource. **Verified:** logs e2e (`telemetrygen logs` → ingest → SigNoz: 40
+   logs, `service.name=telemetrygen`); histogram conversion unit-tested (count/sum/buckets/
+   identity). 11 tests pass.
+   - **Tier 1 done.** Remaining for real AI tokens: a source that emits them
+     (OpenClaw/Hermes via OTLP — PicoClaw doesn't).
 3. Optional collectors: ✅ `process` (watch named processes → `process.*`) and
    `endpoint-probe` (TCP liveness/latency → `harnesssphere.endpoint.*`) — DONE
    (branch `feat/process-probe-collectors`), config-driven (`watch_processes`,
