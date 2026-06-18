@@ -113,15 +113,33 @@ impl Supervisor {
             self.cfg.batch_interval,
         ));
 
-        // One task per source.
+        // One task per source. The whole supervisor body is wrapped in catch_unwind so a
+        // panic *anywhere* (probe, breaker, loop logic) can't make a Critical source die
+        // silently — it escalates to a fatal, honoring "Critical failure → process exits".
+        // (Per-tick `collect` panics are still caught inside the loop and only degrade.)
         let mut handles = Vec::new();
         for source in self.sources {
             let sink = sink.clone();
             let fatal_tx = fatal_tx.clone();
             let threshold = self.cfg.critical_threshold;
-            handles.push(tokio::spawn(supervise_source(
-                source, sink, fatal_tx, threshold,
-            )));
+            let desc = source.descriptor().clone();
+            handles.push(tokio::spawn(async move {
+                let outcome =
+                    AssertUnwindSafe(supervise_source(source, sink, fatal_tx.clone(), threshold))
+                        .catch_unwind()
+                        .await;
+                if outcome.is_err() {
+                    tracing::error!(source = desc.name, "supervisor task panicked");
+                    if desc.criticality == Criticality::Critical {
+                        let _ = fatal_tx
+                            .send(FatalSignal {
+                                source: desc.name,
+                                reason: "supervisor task panicked".into(),
+                            })
+                            .await;
+                    }
+                }
+            }));
         }
         // One task per receiver (driving/push adapters). Always Optional.
         for receiver in self.receivers {
@@ -149,10 +167,17 @@ impl Supervisor {
             }
         };
 
-        for h in handles {
+        // Ordered shutdown / flush-on-fatal: stop the sources & receivers first (this drops
+        // their sink clones), which closes the channel so the drain can flush whatever is
+        // still buffered and export it — instead of dropping it on the floor with abort().
+        for h in &handles {
             h.abort();
         }
-        drain.abort();
+        drop(handles);
+        match tokio::time::timeout(Duration::from_secs(5), drain).await {
+            Ok(_) => {}
+            Err(_) => tracing::warn!("drain flush timed out on shutdown"),
+        }
         self.exporter.shutdown().await;
         result
     }

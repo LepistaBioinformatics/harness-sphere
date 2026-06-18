@@ -30,18 +30,20 @@
   (`catch_unwind`, FR-RES-03) depends on it. Size comes from `opt-level="z"`+`lto`+`strip`.
 - Domain with no dependency on `opentelemetry*` (pre-1.0, churn) — SDK confined to `export/`.
 
-## Known resilience gaps (deferred — design §2 promises, sprint 1 does not deliver)
-- **3rd containment layer (JoinHandle observation):** the supervisor holds the handles
-  but does not observe them to re-spawn (Optional) / escalate (Critical). Today there are
-  only 2 layers (Result + catch_unwind in the tick).
-- **Panic inside `probe()` is not contained** (no catch_unwind): it kills the task of that
-  source silently. To be covered together with the 3rd layer.
-- **Fatal uses `drain.abort()`** (discards the buffer) instead of the *flush → exit* promised
-  in §2.2. Implement an ordered flush of the exporter before `exit(1)`.
-- **Drop-newest** in the `ChannelSink` (not drop-oldest) — see design §2.3.
+## Resilience (design §2) — hardened (branch `feat/resilience-hardening`)
+- ✅ **Comprehensive panic containment + Critical escalation:** the whole supervisor task
+  is wrapped in `catch_unwind`, so a panic *anywhere* (probe, breaker, loop logic) makes a
+  Critical source **fatal** instead of dying silently. (Per-tick `collect` panics are still
+  caught inside the loop → degrade only.) Covers the old "JoinHandle observation" goal and
+  the "probe panic not contained" gap. **Tested:** `critical_probe_panic_is_fatal`.
+- ✅ **Flush-on-fatal:** shutdown aborts sources/receivers (drops their sink clones → closes
+  the channel), then awaits the drain (5s timeout) so buffered signals are exported before
+  exit — replaces the old `drain.abort()`.
+- Still deferred (low value): **drop-newest** in `ChannelSink` (not drop-oldest, design
+  §2.3); **re-spawn** of a dropped Optional source (today it's logged/disabled, not respawned).
 
-Verified in sprint 1: the Critical fatal path end-to-end (`tests/crash.rs`) **and** that a
-failing Optional does not bring it down; happy-path host+self→stdout; policy tests.
+Verified: Critical fatal path + Critical probe-panic → fatal + failing Optional does NOT
+bring it down (`tests/crash.rs`, 3 tests); happy-path host+self→stdout; policy tests.
 
 ## Next steps (backlog)
 1. ~~**OTLP adapter**~~ ✅ **DONE** (branch `feat/otlp-exporter`): `OtlpExporter`
