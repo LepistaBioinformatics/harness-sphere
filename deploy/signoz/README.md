@@ -65,10 +65,23 @@ Don't hunt metric-by-metric — import the bundled dashboard:
 1. SigNoz UI -> **Dashboards** -> **New dashboard** -> **Import JSON**.
 2. Upload [`dashboards/harnesssphere-host.json`](dashboards/harnesssphere-host.json).
 
-It has six panels — host CPU utilization, memory by state, memory utilization, swap, and
-the watcher's own CPU and RSS — all reading the `system.*` / `process.*` metrics the
-binary exports (`service.name=harnesssphere`). Remember: the **Services** tab needs
-*traces*, not metrics, so it stays empty until trace export lands.
+It's laid out in five vendor-neutral sections, inner → outer (any harness, not just
+OpenClaw — all names are OTel semantic conventions plus the `harnesssphere.*` namespace):
+
+1. **Harness (AI)** — `gen_ai.client.token.usage`, `gen_ai.client.operation.duration`,
+   `harnesssphere.harness.messages`.
+2. **Tools** — `harnesssphere.tool.execution.duration`, `harnesssphere.tool.calls`.
+3. **API Calls** — `http.client.request.duration`, `http.server.request.duration`,
+   `harnesssphere.api.requests`.
+4. **Watcher** — the binary's own CPU, RSS and virtual memory (`process.*`).
+5. **Host** — CPU, memory by `system.memory.state`, memory utilization, swap (`system.*`).
+
+**Watcher and Host light up immediately** from the running binary
+(`service.name=harnesssphere`). **Harness / Tools / API stay empty until an AI source
+(OpenClaw/Hermes/PicoClaw) exports those signals to SigNoz** — directly
+(`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`) or via the HarnessSphere ingest
+plane. The **Services** tab needs *traces*, not metrics, so it stays empty until trace
+export lands.
 
 ## Tear down
 

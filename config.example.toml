@@ -5,7 +5,7 @@
 host_interval_secs = 5     # host collection interval (Critical)
 self_interval_secs = 10    # self-observability interval (Critical)
 critical_threshold = 3     # consecutive failures of a Critical before exiting (exit != 0)
-exporter = "stdout"        # "stdout" or "otlp" (the latter needs the `otlp` feature)
+exporter = "otlp"        # "stdout" or "otlp" (the latter needs the `otlp` feature)
 
 # OTLP exporter (when exporter = "otlp"; build with --features otlp)
 otlp_endpoint = "http://localhost:4317"
