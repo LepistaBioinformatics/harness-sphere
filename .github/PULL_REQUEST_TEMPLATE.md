@@ -49,8 +49,10 @@ Closes #
 - [ ] No new compiler warnings; `cargo clippy` clean (if applicable)
 - [ ] Hexagonal boundary respected (no `opentelemetry`/IO types leaked into `domain`)
 - [ ] Resilience preserved (Critical = fatal only on persistent failure; Optional degrades, never crashes)
+- [ ] Spawned tasks are panic-contained by the supervisor; no `unwrap()`/`expect()` on IO / network / external data in production paths
+- [ ] New long-running tasks honor shutdown/cancellation (no orphaned tasks; drain respected)
 - [ ] New metric/attribute/span names follow OpenTelemetry semantic conventions (or are namespaced `harnesssphere.*`)
-- [ ] Config changes documented in `config.example.toml`
+- [ ] Config changes documented in `config.example.toml`, and are backward-compatible (serde defaults) or include a migration note
 - [ ] Docs / `.specs` / dashboard updated (if applicable)
 - [ ] Commits follow conventional commit format
 
