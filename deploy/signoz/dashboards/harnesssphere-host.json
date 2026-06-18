@@ -1,17 +1,17 @@
 {
-  "title": "HarnessSphere \u2014 Harness \u2192 Tools \u2192 Gateway/API \u2192 Processes \u2192 Host",
-  "description": "Layered, vendor-neutral view. Harness/Tools/API gen_ai/http panels need an AI/gateway source emitting; messages/sessions/tool.calls (session collector), endpoint up/latency (probe), process.* (process+self collectors) and Host (system.*) are live from the watcher.",
+  "title": "HarnessSphere \u2014 Harness \u2192 Tools \u2192 Gateway/API \u2192 Processes \u2192 Container \u2192 Host",
+  "description": "Layered, vendor-neutral view. gen_ai/http panels need an AI/gateway source; messages/sessions/tool.calls, endpoint up/latency, process.*, container.* (cgroup v2) and Host system.* are emitted by the watcher's collectors. Re-import is fresh (panel IDs regenerate).",
   "tags": [
     "harnesssphere"
   ],
   "version": "v5",
   "variables": {},
   "panelMap": {
-    "f3f3c01c-f84a-49a4-abc1-02f09ece37a9": {
+    "e3446a27-a891-426c-8658-0a34d966267e": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "288eb075-50dc-4215-bcbf-fb4895634caa",
+          "i": "a9d68ccd-4e95-474f-90e9-738f5d7ac066",
           "x": 0,
           "y": 1,
           "w": 6,
@@ -20,7 +20,7 @@
           "static": false
         },
         {
-          "i": "e01447c5-6bcc-4bf2-a72e-f53bf49e7afc",
+          "i": "924b63b9-dba5-429c-bc70-db8da53357c1",
           "x": 6,
           "y": 1,
           "w": 6,
@@ -29,7 +29,7 @@
           "static": false
         },
         {
-          "i": "ef074252-fb62-4525-b258-3aea63ea837e",
+          "i": "3ee7198f-8f90-4045-9b8b-cfdbcad14968",
           "x": 0,
           "y": 7,
           "w": 6,
@@ -38,7 +38,7 @@
           "static": false
         },
         {
-          "i": "a302634a-16f4-410d-8f98-51e7480b0b2f",
+          "i": "22bc90cb-3a81-4f04-a242-4724286c8409",
           "x": 6,
           "y": 7,
           "w": 6,
@@ -48,11 +48,11 @@
         }
       ]
     },
-    "53b1e8f5-2e14-4489-9921-ec96ca883151": {
+    "1527fa00-e513-425c-a669-155b119f95db": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "7f4b5774-c642-4e1a-b2a1-29592eac0d2d",
+          "i": "5de4638d-8460-4ad9-85c3-bf55ecc6e344",
           "x": 0,
           "y": 14,
           "w": 6,
@@ -61,7 +61,7 @@
           "static": false
         },
         {
-          "i": "6ade415d-7313-4f37-8300-e5ce34a32a43",
+          "i": "3b8ac75e-523f-4bd9-89c3-5e0be4bebdbf",
           "x": 6,
           "y": 14,
           "w": 6,
@@ -71,11 +71,11 @@
         }
       ]
     },
-    "bfe606f0-89ac-4d1b-a1c1-8ff56144d6d9": {
+    "a227f23f-0221-4401-88b0-487d0fa63705": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "5ce6605a-4d71-4d7a-928d-22147a7c4009",
+          "i": "69e93235-3a55-454d-8b9d-ca175b1ed729",
           "x": 0,
           "y": 21,
           "w": 6,
@@ -84,7 +84,7 @@
           "static": false
         },
         {
-          "i": "eaf30dd9-cc6f-48a8-88f1-22cd3686f578",
+          "i": "af283283-343c-40b7-817d-ab33dc6f3632",
           "x": 6,
           "y": 21,
           "w": 6,
@@ -93,7 +93,7 @@
           "static": false
         },
         {
-          "i": "2eeaeec2-b9f1-4493-9759-dd4ec8823255",
+          "i": "1cb96920-0d82-4613-b90a-cb9820f7968b",
           "x": 0,
           "y": 27,
           "w": 6,
@@ -102,7 +102,7 @@
           "static": false
         },
         {
-          "i": "7fe1eb4a-1394-448c-ba07-c54ff3924c69",
+          "i": "d6321eba-cc50-4639-9a2c-c698834d84bd",
           "x": 6,
           "y": 27,
           "w": 6,
@@ -112,11 +112,11 @@
         }
       ]
     },
-    "9b663634-6d62-4406-b294-1b3d8be0941d": {
+    "07725816-91e5-41f7-935a-366c7618aa3f": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "e00ee82c-6f6c-4899-9efa-1fb481298cb7",
+          "i": "8cda0a1c-0ede-47f5-8f2b-aad5d9d5a078",
           "x": 0,
           "y": 34,
           "w": 6,
@@ -125,7 +125,7 @@
           "static": false
         },
         {
-          "i": "e2435bec-623a-4897-87c8-da4d50f6b6a9",
+          "i": "04c37b1a-5e38-4c7e-8fcb-696369d6ba4c",
           "x": 6,
           "y": 34,
           "w": 6,
@@ -134,7 +134,7 @@
           "static": false
         },
         {
-          "i": "68168e0f-8800-4ee3-a50c-c00eee40f836",
+          "i": "9d4b77f8-4334-4fa6-84b4-2857639c7306",
           "x": 0,
           "y": 40,
           "w": 6,
@@ -144,11 +144,11 @@
         }
       ]
     },
-    "788a3b8c-9fd2-402d-8859-c08d73c10f19": {
+    "721432a5-4b3e-463f-947c-31e4d32c9f02": {
       "collapsed": false,
       "widgets": [
         {
-          "i": "0f0d9dd7-957b-4bd6-9f41-cb3c36355f78",
+          "i": "2b4011d8-2edb-4144-ad9d-793ab8434504",
           "x": 0,
           "y": 47,
           "w": 6,
@@ -157,7 +157,7 @@
           "static": false
         },
         {
-          "i": "99ed1b3d-1ff2-4b0b-a34b-515a24346a43",
+          "i": "12b1c719-8151-42eb-ac1c-bb0bad5ac079",
           "x": 6,
           "y": 47,
           "w": 6,
@@ -166,7 +166,7 @@
           "static": false
         },
         {
-          "i": "ee49c2d1-4df2-4130-b32d-d1f02626eaee",
+          "i": "3585ae89-8d34-4be7-a3dd-46b9c1e2d171",
           "x": 0,
           "y": 53,
           "w": 6,
@@ -175,9 +175,59 @@
           "static": false
         },
         {
-          "i": "93935aa7-8479-47bf-aab7-28eab4b40514",
+          "i": "24810feb-e6d9-4e20-a4fd-e56de3e03009",
           "x": 6,
           "y": 53,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "7b6c891c-95d6-47a3-b8de-63aecbb77889",
+          "x": 0,
+          "y": 59,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        }
+      ]
+    },
+    "2ae5ef19-a59c-46a8-9ef3-0e6e8ed4c2f0": {
+      "collapsed": false,
+      "widgets": [
+        {
+          "i": "22e5c2cb-50eb-48f1-9351-8dc470ff03e6",
+          "x": 0,
+          "y": 66,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "7366f9f4-a32d-4b1b-a928-efcdd2bfc211",
+          "x": 6,
+          "y": 66,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "95b03c79-1406-4088-8bdc-4c1902edd386",
+          "x": 0,
+          "y": 72,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "ba27d65d-72b1-488f-927a-d38c1756419d",
+          "x": 6,
+          "y": 72,
           "w": 6,
           "h": 6,
           "moved": false,
@@ -188,7 +238,7 @@
   },
   "layout": [
     {
-      "i": "f3f3c01c-f84a-49a4-abc1-02f09ece37a9",
+      "i": "e3446a27-a891-426c-8658-0a34d966267e",
       "x": 0,
       "y": 0,
       "w": 12,
@@ -200,7 +250,7 @@
       "minW": 12
     },
     {
-      "i": "288eb075-50dc-4215-bcbf-fb4895634caa",
+      "i": "a9d68ccd-4e95-474f-90e9-738f5d7ac066",
       "x": 0,
       "y": 1,
       "w": 6,
@@ -209,7 +259,7 @@
       "static": false
     },
     {
-      "i": "e01447c5-6bcc-4bf2-a72e-f53bf49e7afc",
+      "i": "924b63b9-dba5-429c-bc70-db8da53357c1",
       "x": 6,
       "y": 1,
       "w": 6,
@@ -218,7 +268,7 @@
       "static": false
     },
     {
-      "i": "ef074252-fb62-4525-b258-3aea63ea837e",
+      "i": "3ee7198f-8f90-4045-9b8b-cfdbcad14968",
       "x": 0,
       "y": 7,
       "w": 6,
@@ -227,7 +277,7 @@
       "static": false
     },
     {
-      "i": "a302634a-16f4-410d-8f98-51e7480b0b2f",
+      "i": "22bc90cb-3a81-4f04-a242-4724286c8409",
       "x": 6,
       "y": 7,
       "w": 6,
@@ -236,7 +286,7 @@
       "static": false
     },
     {
-      "i": "53b1e8f5-2e14-4489-9921-ec96ca883151",
+      "i": "1527fa00-e513-425c-a669-155b119f95db",
       "x": 0,
       "y": 13,
       "w": 12,
@@ -248,7 +298,7 @@
       "minW": 12
     },
     {
-      "i": "7f4b5774-c642-4e1a-b2a1-29592eac0d2d",
+      "i": "5de4638d-8460-4ad9-85c3-bf55ecc6e344",
       "x": 0,
       "y": 14,
       "w": 6,
@@ -257,7 +307,7 @@
       "static": false
     },
     {
-      "i": "6ade415d-7313-4f37-8300-e5ce34a32a43",
+      "i": "3b8ac75e-523f-4bd9-89c3-5e0be4bebdbf",
       "x": 6,
       "y": 14,
       "w": 6,
@@ -266,7 +316,7 @@
       "static": false
     },
     {
-      "i": "bfe606f0-89ac-4d1b-a1c1-8ff56144d6d9",
+      "i": "a227f23f-0221-4401-88b0-487d0fa63705",
       "x": 0,
       "y": 20,
       "w": 12,
@@ -278,7 +328,7 @@
       "minW": 12
     },
     {
-      "i": "5ce6605a-4d71-4d7a-928d-22147a7c4009",
+      "i": "69e93235-3a55-454d-8b9d-ca175b1ed729",
       "x": 0,
       "y": 21,
       "w": 6,
@@ -287,7 +337,7 @@
       "static": false
     },
     {
-      "i": "eaf30dd9-cc6f-48a8-88f1-22cd3686f578",
+      "i": "af283283-343c-40b7-817d-ab33dc6f3632",
       "x": 6,
       "y": 21,
       "w": 6,
@@ -296,7 +346,7 @@
       "static": false
     },
     {
-      "i": "2eeaeec2-b9f1-4493-9759-dd4ec8823255",
+      "i": "1cb96920-0d82-4613-b90a-cb9820f7968b",
       "x": 0,
       "y": 27,
       "w": 6,
@@ -305,7 +355,7 @@
       "static": false
     },
     {
-      "i": "7fe1eb4a-1394-448c-ba07-c54ff3924c69",
+      "i": "d6321eba-cc50-4639-9a2c-c698834d84bd",
       "x": 6,
       "y": 27,
       "w": 6,
@@ -314,7 +364,7 @@
       "static": false
     },
     {
-      "i": "9b663634-6d62-4406-b294-1b3d8be0941d",
+      "i": "07725816-91e5-41f7-935a-366c7618aa3f",
       "x": 0,
       "y": 33,
       "w": 12,
@@ -326,7 +376,7 @@
       "minW": 12
     },
     {
-      "i": "e00ee82c-6f6c-4899-9efa-1fb481298cb7",
+      "i": "8cda0a1c-0ede-47f5-8f2b-aad5d9d5a078",
       "x": 0,
       "y": 34,
       "w": 6,
@@ -335,7 +385,7 @@
       "static": false
     },
     {
-      "i": "e2435bec-623a-4897-87c8-da4d50f6b6a9",
+      "i": "04c37b1a-5e38-4c7e-8fcb-696369d6ba4c",
       "x": 6,
       "y": 34,
       "w": 6,
@@ -344,7 +394,7 @@
       "static": false
     },
     {
-      "i": "68168e0f-8800-4ee3-a50c-c00eee40f836",
+      "i": "9d4b77f8-4334-4fa6-84b4-2857639c7306",
       "x": 0,
       "y": 40,
       "w": 6,
@@ -353,7 +403,7 @@
       "static": false
     },
     {
-      "i": "788a3b8c-9fd2-402d-8859-c08d73c10f19",
+      "i": "721432a5-4b3e-463f-947c-31e4d32c9f02",
       "x": 0,
       "y": 46,
       "w": 12,
@@ -365,7 +415,7 @@
       "minW": 12
     },
     {
-      "i": "0f0d9dd7-957b-4bd6-9f41-cb3c36355f78",
+      "i": "2b4011d8-2edb-4144-ad9d-793ab8434504",
       "x": 0,
       "y": 47,
       "w": 6,
@@ -374,7 +424,7 @@
       "static": false
     },
     {
-      "i": "99ed1b3d-1ff2-4b0b-a34b-515a24346a43",
+      "i": "12b1c719-8151-42eb-ac1c-bb0bad5ac079",
       "x": 6,
       "y": 47,
       "w": 6,
@@ -383,7 +433,7 @@
       "static": false
     },
     {
-      "i": "ee49c2d1-4df2-4130-b32d-d1f02626eaee",
+      "i": "3585ae89-8d34-4be7-a3dd-46b9c1e2d171",
       "x": 0,
       "y": 53,
       "w": 6,
@@ -392,9 +442,66 @@
       "static": false
     },
     {
-      "i": "93935aa7-8479-47bf-aab7-28eab4b40514",
+      "i": "24810feb-e6d9-4e20-a4fd-e56de3e03009",
       "x": 6,
       "y": 53,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "7b6c891c-95d6-47a3-b8de-63aecbb77889",
+      "x": 0,
+      "y": 59,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "2ae5ef19-a59c-46a8-9ef3-0e6e8ed4c2f0",
+      "x": 0,
+      "y": 65,
+      "w": 12,
+      "h": 1,
+      "moved": false,
+      "static": false,
+      "maxH": 1,
+      "minH": 1,
+      "minW": 12
+    },
+    {
+      "i": "22e5c2cb-50eb-48f1-9351-8dc470ff03e6",
+      "x": 0,
+      "y": 66,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "7366f9f4-a32d-4b1b-a928-efcdd2bfc211",
+      "x": 6,
+      "y": 66,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "95b03c79-1406-4088-8bdc-4c1902edd386",
+      "x": 0,
+      "y": 72,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "ba27d65d-72b1-488f-927a-d38c1756419d",
+      "x": 6,
+      "y": 72,
       "w": 6,
       "h": 6,
       "moved": false,
@@ -403,13 +510,13 @@
   ],
   "widgets": [
     {
-      "id": "f3f3c01c-f84a-49a4-abc1-02f09ece37a9",
+      "id": "e3446a27-a891-426c-8658-0a34d966267e",
       "title": "Harness (AI)",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "288eb075-50dc-4215-bcbf-fb4895634caa",
+      "id": "a9d68ccd-4e95-474f-90e9-738f5d7ac066",
       "title": "Token usage (needs AI source)",
       "description": "gen_ai.client.token.usage",
       "panelTypes": "graph",
@@ -482,11 +589,11 @@
             "query": ""
           }
         ],
-        "id": "e7bed48e-38ce-4649-ac8a-8c8c5ec39de1"
+        "id": "a041013a-eb0c-4930-adf9-b23cd5b6ee61"
       }
     },
     {
-      "id": "e01447c5-6bcc-4bf2-a72e-f53bf49e7afc",
+      "id": "924b63b9-dba5-429c-bc70-db8da53357c1",
       "title": "Operation duration (needs AI source)",
       "description": "gen_ai.client.operation.duration",
       "panelTypes": "graph",
@@ -559,11 +666,11 @@
             "query": ""
           }
         ],
-        "id": "865bd01f-84ab-4709-8307-ea8b0c0d2326"
+        "id": "8b8868b2-085f-4f8f-bfe6-9c621ce2fcd9"
       }
     },
     {
-      "id": "ef074252-fb62-4525-b258-3aea63ea837e",
+      "id": "3ee7198f-8f90-4045-9b8b-cfdbcad14968",
       "title": "Messages by role",
       "description": "harnesssphere.harness.messages",
       "panelTypes": "graph",
@@ -645,11 +752,11 @@
             "query": ""
           }
         ],
-        "id": "d7596ee2-cb2b-4cde-97d7-d498559d41d8"
+        "id": "678fd608-d4d2-4525-9322-d7921c2382ae"
       }
     },
     {
-      "id": "a302634a-16f4-410d-8f98-51e7480b0b2f",
+      "id": "22bc90cb-3a81-4f04-a242-4724286c8409",
       "title": "Sessions",
       "description": "harnesssphere.harness.sessions",
       "panelTypes": "graph",
@@ -722,17 +829,17 @@
             "query": ""
           }
         ],
-        "id": "32213bb4-74de-4365-be5a-a4584f69aa44"
+        "id": "a26f9e56-de3e-4001-b27c-46022b311bbc"
       }
     },
     {
-      "id": "53b1e8f5-2e14-4489-9921-ec96ca883151",
+      "id": "1527fa00-e513-425c-a669-155b119f95db",
       "title": "Tools",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "7f4b5774-c642-4e1a-b2a1-29592eac0d2d",
+      "id": "5de4638d-8460-4ad9-85c3-bf55ecc6e344",
       "title": "Tool execution duration (needs AI source)",
       "description": "harnesssphere.tool.execution.duration",
       "panelTypes": "graph",
@@ -805,11 +912,11 @@
             "query": ""
           }
         ],
-        "id": "88827460-21c3-4ded-8b01-eed45cbefc33"
+        "id": "8ccecedb-4d9e-4b35-9395-be3afcd0855b"
       }
     },
     {
-      "id": "6ade415d-7313-4f37-8300-e5ce34a32a43",
+      "id": "3b8ac75e-523f-4bd9-89c3-5e0be4bebdbf",
       "title": "Tool calls",
       "description": "harnesssphere.tool.calls",
       "panelTypes": "graph",
@@ -882,17 +989,17 @@
             "query": ""
           }
         ],
-        "id": "53227dfa-e901-4a48-ada9-b37c074f44d6"
+        "id": "9731a081-ea4c-47a6-b468-434950901ed6"
       }
     },
     {
-      "id": "bfe606f0-89ac-4d1b-a1c1-8ff56144d6d9",
+      "id": "a227f23f-0221-4401-88b0-487d0fa63705",
       "title": "Gateway & API",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "5ce6605a-4d71-4d7a-928d-22147a7c4009",
+      "id": "69e93235-3a55-454d-8b9d-ca175b1ed729",
       "title": "Endpoint up",
       "description": "harnesssphere.endpoint.up (1=up/0=down) by target",
       "panelTypes": "graph",
@@ -974,11 +1081,11 @@
             "query": ""
           }
         ],
-        "id": "0609c142-3c50-4423-8575-5439489f1ec4"
+        "id": "50ef6be2-cf68-4c29-88ad-4f122aee1925"
       }
     },
     {
-      "id": "eaf30dd9-cc6f-48a8-88f1-22cd3686f578",
+      "id": "af283283-343c-40b7-817d-ab33dc6f3632",
       "title": "Endpoint probe latency",
       "description": "harnesssphere.endpoint.probe.duration by target",
       "panelTypes": "graph",
@@ -1060,11 +1167,11 @@
             "query": ""
           }
         ],
-        "id": "a2705cc3-e898-4292-bdbb-8ce7986e4e9a"
+        "id": "644ef989-785e-452f-8979-40d1c6f6975c"
       }
     },
     {
-      "id": "2eeaeec2-b9f1-4493-9759-dd4ec8823255",
+      "id": "1cb96920-0d82-4613-b90a-cb9820f7968b",
       "title": "HTTP server latency (needs gateway source)",
       "description": "http.server.request.duration",
       "panelTypes": "graph",
@@ -1137,11 +1244,11 @@
             "query": ""
           }
         ],
-        "id": "b09db32c-e9cd-48bb-940b-1f2908d3de69"
+        "id": "765fb330-3198-4a47-9b73-1a15b10ef23f"
       }
     },
     {
-      "id": "7fe1eb4a-1394-448c-ba07-c54ff3924c69",
+      "id": "d6321eba-cc50-4639-9a2c-c698834d84bd",
       "title": "API requests (needs source)",
       "description": "harnesssphere.api.requests",
       "panelTypes": "graph",
@@ -1214,17 +1321,17 @@
             "query": ""
           }
         ],
-        "id": "fe3b206e-368e-4d10-a2d9-333a5d5f43a9"
+        "id": "e8bb3874-c7bf-4f4f-a063-1f37552e9f26"
       }
     },
     {
-      "id": "9b663634-6d62-4406-b294-1b3d8be0941d",
+      "id": "07725816-91e5-41f7-935a-366c7618aa3f",
       "title": "Processes (watcher self + watched)",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "e00ee82c-6f6c-4899-9efa-1fb481298cb7",
+      "id": "8cda0a1c-0ede-47f5-8f2b-aad5d9d5a078",
       "title": "Process CPU by executable",
       "description": "process.cpu.utilization (incl. harnesssphere itself)",
       "panelTypes": "graph",
@@ -1306,11 +1413,11 @@
             "query": ""
           }
         ],
-        "id": "439144bd-043a-4599-98a3-99147285eac9"
+        "id": "b8e489b7-67ae-4812-84a2-5b26083a31bc"
       }
     },
     {
-      "id": "e2435bec-623a-4897-87c8-da4d50f6b6a9",
+      "id": "04c37b1a-5e38-4c7e-8fcb-696369d6ba4c",
       "title": "Process memory (RSS) by executable",
       "description": "process.memory.usage",
       "panelTypes": "graph",
@@ -1392,11 +1499,11 @@
             "query": ""
           }
         ],
-        "id": "675664dc-de96-4654-b80f-ef5e3ce9cbe4"
+        "id": "e5796661-ca39-492a-9c20-13721e3cfd03"
       }
     },
     {
-      "id": "68168e0f-8800-4ee3-a50c-c00eee40f836",
+      "id": "9d4b77f8-4334-4fa6-84b4-2857639c7306",
       "title": "Process memory (virtual) by executable",
       "description": "process.memory.virtual",
       "panelTypes": "graph",
@@ -1478,17 +1585,453 @@
             "query": ""
           }
         ],
-        "id": "7018d6be-3381-4f8f-8dcb-8528162407f1"
+        "id": "7d625a3b-0621-430f-83fa-38db68d9c63f"
       }
     },
     {
-      "id": "788a3b8c-9fd2-402d-8859-c08d73c10f19",
+      "id": "721432a5-4b3e-463f-947c-31e4d32c9f02",
+      "title": "Container (cgroup v2)",
+      "description": "",
+      "panelTypes": "row"
+    },
+    {
+      "id": "2b4011d8-2edb-4144-ad9d-793ab8434504",
+      "title": "Memory usage by container",
+      "description": "container.memory.usage",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.memory.usage",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "container.id--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "container.id",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "0bee2a1a-f1d7-430c-8a6c-099bf9f17ad8"
+      }
+    },
+    {
+      "id": "12b1c719-8151-42eb-ac1c-bb0bad5ac079",
+      "title": "Memory limit by container",
+      "description": "harnesssphere.container.memory.limit (omitted when unlimited)",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.container.memory.limit",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "container.id--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "container.id",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "d8b67bf9-65e6-4efa-acee-458eee899c8d"
+      }
+    },
+    {
+      "id": "3585ae89-8d34-4be7-a3dd-46b9c1e2d171",
+      "title": "CPU time (rate) by container",
+      "description": "container.cpu.time",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.cpu.time",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "container.id--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "container.id",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "faf14b87-d605-4c7b-8208-9b957a10a5d1"
+      }
+    },
+    {
+      "id": "24810feb-e6d9-4e20-a4fd-e56de3e03009",
+      "title": "CPU throttled (rate) by container",
+      "description": "harnesssphere.container.cpu.throttled",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.container.cpu.throttled",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "container.id--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "container.id",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "b7fed38c-b773-4e12-8bfb-6a53dbc0206c"
+      }
+    },
+    {
+      "id": "7b6c891c-95d6-47a3-b8de-63aecbb77889",
+      "title": "Disk I/O (rate) by direction",
+      "description": "container.disk.io",
+      "panelTypes": "graph",
+      "yAxisUnit": "Bps",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "container.disk.io",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "disk.io.direction--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "disk.io.direction",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "abb48634-3fb2-4201-8c57-9560238716e0"
+      }
+    },
+    {
+      "id": "2ae5ef19-a59c-46a8-9ef3-0e6e8ed4c2f0",
       "title": "Host",
       "description": "",
       "panelTypes": "row"
     },
     {
-      "id": "0f0d9dd7-957b-4bd6-9f41-cb3c36355f78",
+      "id": "22e5c2cb-50eb-48f1-9351-8dc470ff03e6",
       "title": "CPU utilization",
       "description": "system.cpu.utilization",
       "panelTypes": "graph",
@@ -1561,11 +2104,11 @@
             "query": ""
           }
         ],
-        "id": "2fa1d6ba-1781-46c1-b897-6ca7be3cf896"
+        "id": "967696ed-51d4-48a6-88da-666e86474c1f"
       }
     },
     {
-      "id": "99ed1b3d-1ff2-4b0b-a34b-515a24346a43",
+      "id": "7366f9f4-a32d-4b1b-a928-efcdd2bfc211",
       "title": "Memory by state",
       "description": "system.memory.usage (used/free/available)",
       "panelTypes": "graph",
@@ -1647,11 +2190,11 @@
             "query": ""
           }
         ],
-        "id": "e757591a-c0f5-4a4f-9927-e40ec57f5b05"
+        "id": "9a499a2b-72b4-4a7e-b5f0-d563f48a80d7"
       }
     },
     {
-      "id": "ee49c2d1-4df2-4130-b32d-d1f02626eaee",
+      "id": "95b03c79-1406-4088-8bdc-4c1902edd386",
       "title": "Memory utilization",
       "description": "system.memory.utilization",
       "panelTypes": "graph",
@@ -1724,11 +2267,11 @@
             "query": ""
           }
         ],
-        "id": "c74c14ac-dd98-4213-af38-169a8b9bfb38"
+        "id": "2dc33508-8095-416a-a639-e139280850a5"
       }
     },
     {
-      "id": "93935aa7-8479-47bf-aab7-28eab4b40514",
+      "id": "ba27d65d-72b1-488f-927a-d38c1756419d",
       "title": "Swap used",
       "description": "system.paging.usage",
       "panelTypes": "graph",
@@ -1801,7 +2344,7 @@
             "query": ""
           }
         ],
-        "id": "f9027777-c475-42ee-b2f3-e9b6656f3358"
+        "id": "8ee833dc-1686-4cc2-8e76-8c4646f7de98"
       }
     }
   ]
