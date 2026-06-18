@@ -28,7 +28,15 @@ jobs:
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
+          set -uo pipefail
+          # Guard against oversized diffs blowing the model's context (~4 chars/token).
+          MAX_CHARS=60000
           DIFF=$(cat pr.diff)
+          NOTE=""
+          if [ "${#DIFF}" -gt "$MAX_CHARS" ]; then
+            DIFF="${DIFF:0:$MAX_CHARS}"
+            NOTE="> ⚠️ Diff truncated to ${MAX_CHARS} chars for review."
+          fi
           PAYLOAD=$(jq -n \
             --arg diff "$DIFF" \
             '{
@@ -46,16 +54,22 @@ jobs:
               ]
             }')
 
-          RESPONSE=$(curl -s https://api.deepseek.com/v1/chat/completions \
+          HTTP=$(curl -sS -o resp.json -w '%{http_code}' \
+            https://api.deepseek.com/v1/chat/completions \
             -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "$PAYLOAD")
+            -d "$PAYLOAD" || echo "000")
 
-          REVIEW=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // "DeepSeek returned no content."')
+          if [ "$HTTP" != "200" ]; then
+            REVIEW="_Automated review unavailable (DeepSeek API returned HTTP ${HTTP})._"
+          else
+            REVIEW=$(jq -r '.choices[0].message.content // "_DeepSeek returned no content._"' resp.json)
+          fi
 
           {
             echo "## DeepSeek Code Review"
             echo ""
+            if [ -n "$NOTE" ]; then echo "$NOTE"; echo ""; fi
             echo "$REVIEW"
           } > review_comment.md
 
