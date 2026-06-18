@@ -8,7 +8,9 @@ mod config;
 use std::sync::Arc;
 
 use config::Config;
-use harnesssphere_collectors::{HostCollector, SelfCollector};
+use harnesssphere_collectors::{
+    EndpointProbeCollector, HostCollector, ProcessCollector, SelfCollector,
+};
 use harnesssphere_domain::{SignalExporter, SignalSource};
 use harnesssphere_export::StdoutExporter;
 use harnesssphere_runtime::{RuntimeConfig, Supervisor};
@@ -41,6 +43,19 @@ async fn main() {
             eprintln!("fatal failure starting 'self' collector: {e}");
             std::process::exit(1);
         }
+    }
+    // Optional, harness-independent: watch external processes and probe endpoints.
+    if !cfg.watch_processes.is_empty() {
+        sources.push(Box::new(ProcessCollector::new(
+            cfg.watch_processes.clone(),
+            cfg.host_interval(),
+        )));
+    }
+    if !cfg.probe_targets.is_empty() {
+        sources.push(Box::new(EndpointProbeCollector::new(
+            cfg.probe_targets.clone(),
+            cfg.host_interval(),
+        )));
     }
 
     // --- Output adapter (driven) ---
