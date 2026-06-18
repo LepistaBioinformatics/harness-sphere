@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use config::Config;
 use harnesssphere_collectors::{
-    EndpointProbeCollector, HostCollector, ProcessCollector, SelfCollector,
+    EndpointProbeCollector, HostCollector, ProcessCollector, SelfCollector, SessionCollector,
 };
 use harnesssphere_domain::{SignalExporter, SignalSource};
 use harnesssphere_export::StdoutExporter;
@@ -54,6 +54,13 @@ async fn main() {
     if !cfg.probe_targets.is_empty() {
         sources.push(Box::new(EndpointProbeCollector::new(
             cfg.probe_targets.clone(),
+            cfg.host_interval(),
+        )));
+    }
+    if !cfg.session_dir.is_empty() {
+        sources.push(Box::new(SessionCollector::new(
+            cfg.session_dir.clone(),
+            cfg.session_source.clone(),
             cfg.host_interval(),
         )));
     }

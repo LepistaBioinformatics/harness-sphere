@@ -556,7 +556,7 @@
                   "reduceTo": "avg",
                   "spaceAggregation": "sum",
                   "temporality": null,
-                  "timeAggregation": "rate"
+                  "timeAggregation": "latest"
                 }
               ],
               "dataSource": "metrics",
@@ -570,7 +570,16 @@
                 "op": "AND"
               },
               "functions": [],
-              "groupBy": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "role--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "role",
+                  "type": "tag"
+                }
+              ],
               "having": {
                 "expression": ""
               },
@@ -716,7 +725,7 @@
                   "reduceTo": "avg",
                   "spaceAggregation": "sum",
                   "temporality": null,
-                  "timeAggregation": "rate"
+                  "timeAggregation": "latest"
                 }
               ],
               "dataSource": "metrics",

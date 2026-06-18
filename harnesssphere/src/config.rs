@@ -28,6 +28,11 @@ pub struct Config {
     pub watch_processes: Vec<String>,
     /// `host:port` endpoints to TCP-probe for liveness/latency. Empty = disabled.
     pub probe_targets: Vec<String>,
+    /// Directory of harness session JSONL files (e.g. "~/.picoclaw/workspace/sessions").
+    /// Empty = disabled. Derives message/tool counts (no tokens — not on disk).
+    pub session_dir: String,
+    /// Label for the harness whose sessions are read (`harness.name`).
+    pub session_source: String,
 }
 
 impl Default for Config {
@@ -46,6 +51,8 @@ impl Default for Config {
             ingest_endpoint: "0.0.0.0:4318".to_owned(),
             watch_processes: Vec::new(),
             probe_targets: Vec::new(),
+            session_dir: String::new(),
+            session_source: "picoclaw".to_owned(),
         }
     }
 }
