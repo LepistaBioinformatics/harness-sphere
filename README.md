@@ -129,8 +129,8 @@ in your backend in a standard, vendor-neutral shape.
 
 | Signal | Key | Type | What it tells you | Status |
 |---|---|---|---|---|
-| M | `harnesssphere.harness.messages` | G | Message counts by role (user/assistant/system/tool), derived from on-disk session transcripts, tagged `harness.name` | ✅ |
-| M | `harnesssphere.harness.sessions` | G | Number of session transcripts on disk | ✅ |
+| M | `harnesssphere.harness.messages` | G | Messages by `role` (user/assistant/system/tool) — the **absolute count present in the on-disk transcripts**, re-derived each scrape (not a since-start counter), tagged `harness.name` | ✅ |
+| M | `harnesssphere.harness.sessions` | G | Number of session transcripts on disk (absolute, re-derived each scrape) | ✅ |
 | M | `gen_ai.client.token.usage` | H (`{token}`) | Tokens consumed, split by `input`/`output`, model and provider *(needs a GenAI source — not derivable from disk)* | 🟡 |
 | M | `gen_ai.client.operation.duration` | H (s) | End-to-end latency of each AI operation | 🟡 |
 | M | `harnesssphere.harness.token.cache` | C (`{token}`) | Cache-read and cache-creation tokens | 🟡 |
@@ -144,6 +144,14 @@ in your backend in a standard, vendor-neutral shape.
 > **Privacy by default:** prompt and completion *content* is **never** captured unless you
 > explicitly opt in, per layer. By default you get counts, durations and status — not text.
 
+> **Why Gauges, not Counters here?** The session collector re-reads the *full* transcripts on
+> every scrape and reports the **absolute** total it finds — so `harness.messages`,
+> `harness.sessions` and `tool.calls` are Gauges (an absolute sample), not additive Counters.
+> Emitting an absolute value through the OTLP Counter path (`add()`) would double-count each
+> tick. They survive restarts (the truth lives on disk) and can fall if transcripts are rotated
+> away. The push-based `gen_ai.*`/`execute_tool` signals — true per-event deltas — remain
+> Counters/Histograms.
+
 ### 🔧 Tools — *Optional*
 
 Every tool the AI invokes, timed and counted, following the GenAI `execute_tool` span
@@ -151,7 +159,7 @@ convention.
 
 | Signal | Key | Type | What it tells you | Status |
 |---|---|---|---|---|
-| M | `harnesssphere.tool.calls` | G | Tool-call count, derived from session transcripts, tagged `harness.name` | ✅ |
+| M | `harnesssphere.tool.calls` | G | Tool-call count present in the transcripts — **absolute, re-derived each scrape** (a Gauge sample, not a delta counter), tagged `harness.name` | ✅ |
 | M | `harnesssphere.tool.execution.duration` | H (s) | How long each tool takes, by name and outcome *(needs a GenAI source)* | 🟡 |
 | L | tool execution errors | L | Tool name, error type and message | 🟡 |
 | T | `execute_tool {tool_name}` | T | A span per tool call, nested under its parent AI span | 🟡 |
@@ -324,11 +332,11 @@ overrides:
 | `ingest_enabled` | `false` | Enable the local OTLP/gRPC ingest receiver (feature `ingest`) |
 | `ingest_endpoint` | `0.0.0.0:4318` | Address the ingest receiver binds to |
 | `watch_processes` | `[]` | Executable-name substrings to watch (e.g. `["picoclaw"]`); empty = disabled |
-| `probe_targets` | `[]` | `host:port` endpoints to TCP-probe for liveness/latency; empty = disabled |
+| `probe_targets` | `[]` | `host:port` endpoints to TCP-probe for liveness/latency (each entry must include a port); empty = disabled |
 | `session_dir` | `""` | Directory of harness session JSONL files (a leading `~/` is expanded); empty = disabled |
 | `session_source` | `picoclaw` | `harness.name` label for the parsed sessions |
 | `container_cgroup` | `""` | A container's cgroup v2 directory to read; empty = disabled |
-| `container_id` | `""` | `container.id` label; empty → derived from the cgroup directory's name |
+| `container_id` | `""` | `container.id` label; empty → derived from the cgroup directory's name (works for Docker-style `docker-<id>.scope` paths — set it explicitly under Podman/systemd/custom cgroup managers) |
 
 > Each Optional collector is **off until you configure it** — that's why a fresh run shows
 > only Host and Self. Set the keys above (or use [`config.example.toml`](config.example.toml))
