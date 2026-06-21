@@ -48,6 +48,10 @@ pub struct Config {
     pub prometheus_token_file: String,
     /// `harness.name` label stamped on the scraped metrics.
     pub prometheus_harness_name: String,
+    /// Scrape interval (seconds) for the Prometheus collector. A network scrape warrants a
+    /// slower cadence than the local collectors, so it has its own field rather than reusing
+    /// `host_interval_secs`.
+    pub prometheus_interval_secs: u64,
 }
 
 impl Default for Config {
@@ -74,6 +78,7 @@ impl Default for Config {
             prometheus_scrape_url: String::new(),
             prometheus_token_file: String::new(),
             prometheus_harness_name: "openclaw".to_owned(),
+            prometheus_interval_secs: 15,
         }
     }
 }
@@ -103,6 +108,9 @@ impl Config {
     pub fn self_interval(&self) -> Duration {
         Duration::from_secs(self.self_interval_secs.max(1))
     }
+    pub fn prometheus_interval(&self) -> Duration {
+        Duration::from_secs(self.prometheus_interval_secs.max(1))
+    }
 
     /// Resolves the Prometheus scrape bearer token (secret) from the environment or token file,
     /// in that order. Never returns a token configured inline in the TOML.
@@ -122,9 +130,10 @@ impl Config {
                     }
                 }
                 Err(e) => {
-                    eprintln!(
-                        "warning: failed to read prometheus_token_file '{}': {e}",
-                        self.prometheus_token_file
+                    tracing::warn!(
+                        file = %self.prometheus_token_file,
+                        error = %e,
+                        "failed to read prometheus_token_file"
                     );
                 }
             }

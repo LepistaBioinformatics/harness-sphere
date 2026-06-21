@@ -77,7 +77,7 @@ async fn main() {
             cfg.prometheus_scrape_url.clone(),
             cfg.prometheus_token(),
             cfg.prometheus_harness_name.clone(),
-            cfg.host_interval(),
+            cfg.prometheus_interval(),
         )));
     }
 

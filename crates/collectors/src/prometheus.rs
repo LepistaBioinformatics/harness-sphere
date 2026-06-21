@@ -738,4 +738,33 @@ mod tests {
         assert!(req.contains("Connection: close"));
         assert!(req.contains("Authorization: Bearer secret-tok"));
     }
+
+    /// Canned-response server: each connection gets `resp` and is closed.
+    async fn serve_once(resp: &'static str) -> std::net::SocketAddr {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (mut sock, _) = listener.accept().await.unwrap();
+            let mut buf = [0u8; 1024];
+            let _ = sock.read(&mut buf).await;
+            sock.write_all(resp.as_bytes()).await.unwrap();
+        });
+        addr
+    }
+
+    #[tokio::test]
+    async fn http_get_errors_on_non_2xx() {
+        let addr = serve_once("HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\nboom").await;
+        let url = parse_http_url(&format!("http://{addr}/metrics")).unwrap();
+        let err = http_get(&url, None, Duration::from_secs(2)).await.unwrap_err();
+        assert!(err.contains("500"), "unexpected error: {err}");
+    }
+
+    #[tokio::test]
+    async fn http_get_errors_on_malformed_response() {
+        let addr = serve_once("garbage-without-header-terminator").await;
+        let url = parse_http_url(&format!("http://{addr}/metrics")).unwrap();
+        let err = http_get(&url, None, Duration::from_secs(2)).await.unwrap_err();
+        assert!(err.contains("malformed"), "unexpected error: {err}");
+    }
 }
