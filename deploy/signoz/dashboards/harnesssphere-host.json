@@ -1,5 +1,5 @@
 {
-  "title": "HarnessSphere \u2014 Harness \u2192 Tools \u2192 Gateway/API \u2192 Processes \u2192 Container \u2192 Host",
+  "title": "HarnessSphere — Harness → Tools → Gateway/API → Processes → Container → Host",
   "description": "Layered, vendor-neutral view. gen_ai/http panels need an AI/gateway source; messages/sessions/tool.calls, endpoint up/latency, process.*, container.* (cgroup v2) and Host system.* are emitted by the watcher's collectors. Re-import is fresh (panel IDs regenerate).",
   "tags": [
     "harnesssphere"
@@ -228,6 +228,83 @@
           "i": "ba27d65d-72b1-488f-927a-d38c1756419d",
           "x": 6,
           "y": 72,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        }
+      ]
+    },
+    "01d2552e-c66f-5720-b946-ce4b1c8816f1": {
+      "collapsed": false,
+      "widgets": [
+        {
+          "i": "9c527c98-abad-5ff6-b066-c8e82e65b25d",
+          "x": 0,
+          "y": 79,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "f5b9def2-5aa4-5ce8-a43f-8a4964865800",
+          "x": 6,
+          "y": 79,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "130b9f64-2aec-5d03-ba16-ce10b3f10296",
+          "x": 0,
+          "y": 85,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "971928b2-93db-5de1-bf9d-272804681685",
+          "x": 6,
+          "y": 85,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "ec2615bb-ea76-513a-8bf0-3ffdd86e80ee",
+          "x": 0,
+          "y": 91,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "be4bf6b1-b078-5f61-b0b3-e95a56176c78",
+          "x": 6,
+          "y": 91,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "da1370ee-b444-5a1a-a9c1-e11b85ba16c3",
+          "x": 0,
+          "y": 97,
+          "w": 6,
+          "h": 6,
+          "moved": false,
+          "static": false
+        },
+        {
+          "i": "e1b026a8-df7f-5d12-b306-20d8ec3dd85b",
+          "x": 6,
+          "y": 97,
           "w": 6,
           "h": 6,
           "moved": false,
@@ -506,6 +583,90 @@
       "h": 6,
       "moved": false,
       "static": false
+    },
+    {
+      "i": "01d2552e-c66f-5720-b946-ce4b1c8816f1",
+      "x": 0,
+      "y": 78,
+      "w": 12,
+      "h": 1,
+      "moved": false,
+      "static": false,
+      "maxH": 1,
+      "minH": 1,
+      "minW": 12
+    },
+    {
+      "i": "9c527c98-abad-5ff6-b066-c8e82e65b25d",
+      "x": 0,
+      "y": 79,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "f5b9def2-5aa4-5ce8-a43f-8a4964865800",
+      "x": 6,
+      "y": 79,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "130b9f64-2aec-5d03-ba16-ce10b3f10296",
+      "x": 0,
+      "y": 85,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "971928b2-93db-5de1-bf9d-272804681685",
+      "x": 6,
+      "y": 85,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "ec2615bb-ea76-513a-8bf0-3ffdd86e80ee",
+      "x": 0,
+      "y": 91,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "be4bf6b1-b078-5f61-b0b3-e95a56176c78",
+      "x": 6,
+      "y": 91,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "da1370ee-b444-5a1a-a9c1-e11b85ba16c3",
+      "x": 0,
+      "y": 97,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "e1b026a8-df7f-5d12-b306-20d8ec3dd85b",
+      "x": 6,
+      "y": 97,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
     }
   ],
   "widgets": [
@@ -517,7 +678,7 @@
     },
     {
       "id": "a9d68ccd-4e95-474f-90e9-738f5d7ac066",
-      "title": "Token usage (needs AI source)",
+      "title": "Token usage (OpenClaw scrape)",
       "description": "gen_ai.client.token.usage",
       "panelTypes": "graph",
       "yAxisUnit": "short",
@@ -594,7 +755,7 @@
     },
     {
       "id": "924b63b9-dba5-429c-bc70-db8da53357c1",
-      "title": "Operation duration (needs AI source)",
+      "title": "Operation duration (OpenClaw scrape)",
       "description": "gen_ai.client.operation.duration",
       "panelTypes": "graph",
       "yAxisUnit": "s",
@@ -2345,6 +2506,716 @@
           }
         ],
         "id": "8ee833dc-1686-4cc2-8e76-8c4646f7de98"
+      }
+    },
+    {
+      "id": "01d2552e-c66f-5720-b946-ce4b1c8816f1",
+      "title": "OpenClaw gateway (Prometheus scrape)",
+      "description": "Curated scrape of OpenClaw's /api/diagnostics/prometheus: GenAI -> gen_ai.* (Harness row above); the rest -> harnesssphere.openclaw.*.",
+      "panelTypes": "row"
+    },
+    {
+      "id": "9c527c98-abad-5ff6-b066-c8e82e65b25d",
+      "title": "Model calls (rate)",
+      "description": "harnesssphere.openclaw.model_call",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.openclaw.model_call",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "model--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "model",
+                  "type": "tag"
+                },
+                {
+                  "dataType": "string",
+                  "id": "outcome--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "outcome",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "38873e00-891e-5ae7-b03d-acf5b06cf785"
+      }
+    },
+    {
+      "id": "f5b9def2-5aa4-5ce8-a43f-8a4964865800",
+      "title": "Tokens by type (rate)",
+      "description": "harnesssphere.openclaw.model_tokens",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.openclaw.model_tokens",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "token_type--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "token_type",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "2e4973a1-a91b-507c-a8ed-042c2f1936e9"
+      }
+    },
+    {
+      "id": "130b9f64-2aec-5d03-ba16-ce10b3f10296",
+      "title": "Model cost USD (rate)",
+      "description": "harnesssphere.openclaw.model_cost_usd",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.openclaw.model_cost_usd",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "model--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "model",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "f3f62ce9-4faf-53dd-99ee-2ae86abe3d87"
+      }
+    },
+    {
+      "id": "971928b2-93db-5de1-bf9d-272804681685",
+      "title": "Run duration (avg)",
+      "description": "harnesssphere.openclaw.run_duration",
+      "panelTypes": "graph",
+      "yAxisUnit": "s",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.openclaw.run_duration",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "avg",
+                  "temporality": null,
+                  "timeAggregation": "avg"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "outcome--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "outcome",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "66907ffd-1b8d-5a0a-8bb0-c82dd6b7d0c5"
+      }
+    },
+    {
+      "id": "ec2615bb-ea76-513a-8bf0-3ffdd86e80ee",
+      "title": "Tool execution (rate)",
+      "description": "harnesssphere.openclaw.tool_execution",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.openclaw.tool_execution",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "tool--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "tool",
+                  "type": "tag"
+                },
+                {
+                  "dataType": "string",
+                  "id": "outcome--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "outcome",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "5a065aea-013e-5d69-b791-d567646da9ec"
+      }
+    },
+    {
+      "id": "be4bf6b1-b078-5f61-b0b3-e95a56176c78",
+      "title": "Messages received (rate)",
+      "description": "harnesssphere.openclaw.message_received",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.openclaw.message_received",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "channel--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "channel",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "fb9b93ce-b109-5a07-b8c8-33103b61fc4d"
+      }
+    },
+    {
+      "id": "da1370ee-b444-5a1a-a9c1-e11b85ba16c3",
+      "title": "Queue lane size",
+      "description": "harnesssphere.openclaw.queue_lane_size",
+      "panelTypes": "graph",
+      "yAxisUnit": "short",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.openclaw.queue_lane_size",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "max",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "lane--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "lane",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "a9429fc6-5fab-59cd-85be-758869d9f437"
+      }
+    },
+    {
+      "id": "e1b026a8-df7f-5d12-b306-20d8ec3dd85b",
+      "title": "Gateway memory",
+      "description": "harnesssphere.openclaw.memory",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "fillSpans": false,
+      "isStacked": false,
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "columnUnits": {},
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "mergeAllActiveQueries": false,
+      "softMax": null,
+      "softMin": null,
+      "thresholds": [],
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "harnesssphere.openclaw.memory",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
+              "functions": [],
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "id": "kind--string--tag--false",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "key": "kind",
+                  "type": "tag"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "",
+              "limit": null,
+              "orderBy": [],
+              "queryName": "A",
+              "reduceTo": "avg",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "clickhouse_sql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "promql": [
+          {
+            "disabled": false,
+            "legend": "",
+            "name": "A",
+            "query": ""
+          }
+        ],
+        "id": "4fecf832-ea03-53e3-b469-95bba52f4683"
       }
     }
   ]

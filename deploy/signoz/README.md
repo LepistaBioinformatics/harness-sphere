@@ -68,11 +68,12 @@ Don't hunt metric-by-metric — import the bundled dashboard:
 > Re-importing creates a **fresh** dashboard (panel IDs are regenerated on each update), so
 > any local customizations to a previously imported copy are not carried over — import as new.
 
-It's laid out in six vendor-neutral sections, inner → outer (OTel semantic conventions
+It's laid out in seven vendor-neutral sections, inner → outer (OTel semantic conventions
 plus the `harnesssphere.*` namespace). ✅ = populated by the watcher today, ⏳ = needs an
 AI/gateway source emitting:
 
-1. **Harness (AI)** — `gen_ai.client.token.usage` ⏳, `gen_ai.client.operation.duration` ⏳,
+1. **Harness (AI)** — `gen_ai.client.token.usage` ✅, `gen_ai.client.operation.duration` ✅
+   *(now fed by the `prometheus` collector scraping OpenClaw — see section 7)*;
    `harnesssphere.harness.messages` (by role) ✅, `harnesssphere.harness.sessions` ✅
    *(session collector — derived from on-disk session files)*.
 2. **Tools** — `harnesssphere.tool.execution.duration` ⏳, `harnesssphere.tool.calls` ✅.
@@ -85,12 +86,20 @@ AI/gateway source emitting:
    `container.cpu.time`, `harnesssphere.container.cpu.throttled`, `container.disk.io` ✅
    *(container collector; needs `container_cgroup` set to a cgroup v2 dir)*.
 6. **Host** — CPU, memory by `system.memory.state`, memory utilization, swap (`system.*`) ✅.
+7. **OpenClaw gateway (Prometheus scrape)** ✅ — the `prometheus` collector scrapes OpenClaw's
+   auth-protected `/api/diagnostics/prometheus`: model calls, tokens by type, cost (USD), run
+   duration, tool execution, messages, queue depth and gateway memory — all under
+   `harnesssphere.openclaw.*` (the GenAI pair lands in section 1 as `gen_ai.*`).
 
-The ⏳ panels need an AI/gateway source exporting those signals to SigNoz — directly
-(`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`) or via the HarnessSphere ingest plane
-(which now forwards **metrics, traces, logs and histograms**). The **Services** tab needs
-*traces* (build with `--features ingest,otlp`, set `ingest_enabled=true` on a free port);
-ingested **logs** show up in the **Logs** tab.
+Sections 1 (GenAI) and 7 populate once the `prometheus` collector scrapes OpenClaw — set
+`prometheus_scrape_url = "http://127.0.0.1:18789/api/diagnostics/prometheus"` and supply the
+gateway token via `prometheus_token_file` or `HARNESSSPHERE_PROMETHEUS_TOKEN` (build with
+`--features otlp` to ship the scraped metrics to SigNoz). The remaining ⏳ panels
+(`http.server.request.duration`, `harnesssphere.api.requests`, `harnesssphere.tool.execution.duration`)
+need another AI/gateway source — directly (`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`)
+or via the HarnessSphere ingest plane (which now forwards **metrics, traces, logs and
+histograms**). The **Services** tab needs *traces* (build with `--features ingest,otlp`, set
+`ingest_enabled=true` on a free port); ingested **logs** show up in the **Logs** tab.
 
 ## Tear down
 
