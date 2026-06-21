@@ -292,7 +292,7 @@ dependencies = [
 
 [[package]]
 name = "harnesssphere"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "harnesssphere-collectors",
@@ -309,7 +309,7 @@ dependencies = [
 
 [[package]]
 name = "harnesssphere-collectors"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "async-trait",
  "harnesssphere-domain",
@@ -322,7 +322,7 @@ dependencies = [
 
 [[package]]
 name = "harnesssphere-domain"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "async-trait",
  "thiserror",
@@ -330,7 +330,7 @@ dependencies = [
 
 [[package]]
 name = "harnesssphere-export"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "async-trait",
  "harnesssphere-domain",
@@ -344,7 +344,7 @@ dependencies = [
 
 [[package]]
 name = "harnesssphere-ingest"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "async-trait",
  "harnesssphere-domain",
@@ -356,7 +356,7 @@ dependencies = [
 
 [[package]]
 name = "harnesssphere-runtime"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "async-trait",
  "futures",
