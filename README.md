@@ -96,12 +96,12 @@ directly from the kernel — no Docker socket, no runtime API, no extra permissi
 
 | Signal | Key | Type | What it tells you | Status |
 |---|---|---|---|---|
-| M | `container.cpu.time` / `container.cpu.usage` | C / G | CPU consumed by the container | 🟡 |
-| M | `container.memory.usage` | UDC (By) | Container memory in use (`memory.current`) | 🟡 |
-| M | `harnesssphere.container.memory.limit` | G (By) | The container's memory ceiling (`memory.max`) | 🟡 |
-| M | `harnesssphere.container.memory.throttled` | C | OOM/throttle events (`memory.events`) | 🟡 |
-| M | `harnesssphere.container.cpu.throttled` | C | CPU throttling (`nr_throttled` / `throttled_usec`) | 🟡 |
-| M | `container.disk.io` | C (By) | Container disk I/O (`io.stat`) | 🟡 |
+| M | `container.cpu.time` | C (s) | CPU time consumed by the container (`cpu.stat` → `usage_usec`) | ✅ |
+| M | `container.memory.usage` | UDC (By) | Container memory in use (`memory.current`) | ✅ |
+| M | `harnesssphere.container.memory.limit` | G (By) | The container's memory ceiling (`memory.max`; omitted when unlimited) | ✅ |
+| M | `harnesssphere.container.memory.oom` | C | OOM-kill events (`memory.events` → `oom_kill`) | ✅ |
+| M | `harnesssphere.container.cpu.throttled` | C (s) | CPU throttling time (`cpu.stat` → `throttled_usec`) | ✅ |
+| M | `container.disk.io` | C (By) | Container disk I/O by direction (`io.stat` → rbytes/wbytes, tagged `disk.io.direction`) | ✅ |
 | L | container lifecycle | L | Warns when the container vanishes from the cgroup | 🟡 |
 | T | — | — | *N/A — cgroup metrics are non-transactional* | — |
 
@@ -113,11 +113,11 @@ receiving what it pushes over OTLP.
 
 | Signal | Key | Type | What it tells you | Status |
 |---|---|---|---|---|
+| M | `harnesssphere.endpoint.up` | G (0/1) | Is the gateway/endpoint reachable? (black-box TCP probe, tagged `server.address`) | ✅ |
+| M | `harnesssphere.endpoint.probe.duration` | G (s) | Latency of the watcher's own TCP health probe | ✅ |
 | M | `http.server.request.duration` | H (s) | Per-route latency, tagged with method, route and status code | 🟡 |
 | M | `http.server.active_requests` | UDC | Requests in flight | 🟡 |
-| M | `harnesssphere.gateway.up` | G (0/1) | Is the gateway/route reachable? | 🟡 |
 | M | `harnesssphere.gateway.connections.active` | UDC | Active connections by state | 🟡 |
-| M | `harnesssphere.gateway.probe.latency` | H (s) | Latency of the watcher's own health probe | 🟡 |
 | L | dropped connections / upstream 5xx | L | Gateway-side failures with route and status | 🟡 |
 | T | trace passthrough | T | Propagated `traceparent` is forwarded so AI traces stay connected | 🟡 |
 
@@ -129,9 +129,10 @@ in your backend in a standard, vendor-neutral shape.
 
 | Signal | Key | Type | What it tells you | Status |
 |---|---|---|---|---|
-| M | `gen_ai.client.token.usage` | H (`{token}`) | Tokens consumed, split by `input`/`output`, model and provider | 🟡 |
+| M | `harnesssphere.harness.messages` | G | Message counts by role (user/assistant/system/tool), derived from on-disk session transcripts, tagged `harness.name` | ✅ |
+| M | `harnesssphere.harness.sessions` | G | Number of session transcripts on disk | ✅ |
+| M | `gen_ai.client.token.usage` | H (`{token}`) | Tokens consumed, split by `input`/`output`, model and provider *(needs a GenAI source — not derivable from disk)* | 🟡 |
 | M | `gen_ai.client.operation.duration` | H (s) | End-to-end latency of each AI operation | 🟡 |
-| M | `harnesssphere.harness.messages` | C | Message counts by role (user/assistant/system/tool) | 🟡 |
 | M | `harnesssphere.harness.token.cache` | C (`{token}`) | Cache-read and cache-creation tokens | 🟡 |
 | M | `harnesssphere.harness.memory.files` / `…memory.bytes` | G | Size of the harness's memory store | 🟡 |
 | M | `harnesssphere.harness.search_index.queries` | C | Search-index lookups, tagged `hit`/`miss` | 🟡 |
@@ -150,8 +151,8 @@ convention.
 
 | Signal | Key | Type | What it tells you | Status |
 |---|---|---|---|---|
-| M | `harnesssphere.tool.execution.duration` | H (s) | How long each tool takes, by name and outcome | 🟡 |
-| M | `harnesssphere.tool.calls` | C | Call count per tool | 🟡 |
+| M | `harnesssphere.tool.calls` | G | Tool-call count, derived from session transcripts, tagged `harness.name` | ✅ |
+| M | `harnesssphere.tool.execution.duration` | H (s) | How long each tool takes, by name and outcome *(needs a GenAI source)* | 🟡 |
 | L | tool execution errors | L | Tool name, error type and message | 🟡 |
 | T | `execute_tool {tool_name}` | T | A span per tool call, nested under its parent AI span | 🟡 |
 
@@ -185,11 +186,14 @@ data comes from.
 |---|---|---|---|
 | **Host** | Pull — `sysinfo` crate | On each tick the host collector refreshes [`sysinfo`](https://crates.io/crates/sysinfo), which reads the OS natively (`/proc` and `/sys` on Linux, equivalent APIs on macOS). CPU comes from the aggregate utilization, memory from total/used/free/available, swap from the paging counters. | ✅ |
 | **Watcher (Self)** | Pull — `sysinfo` process API | The watcher looks up *its own* PID (`get_current_pid`) and reads that process's CPU and memory (RSS, virtual) — pure self-observation, no privileges needed. | ✅ |
-| **Container** | Pull — **cgroup v2**, read directly | Reads the kernel's cgroup v2 files (`memory.current`, `memory.max`, `cpu.stat`, `io.stat`, `memory.events`) straight from the filesystem. No Docker socket, no runtime API, no extra permissions. | 🟡 |
-| **Gateway** | Pull — Prometheus scrape + active probe | Scrapes the gateway's Prometheus endpoint (e.g. OpenClaw's `/api/diagnostics/prometheus`) and runs a lightweight health probe for reachability/latency. | 🟡 |
-| **Harness (AI)** | **Push — OTLP ingest** (+ Prometheus) | This data is *internal to the app* — a passive watcher can't see tokens or search-index hits. So OpenClaw/Hermes **push OTLP** to HarnessSphere's local receiver; it converts each metric to the canonical model, **preserves the origin identity** (`service.name`, `gen_ai.provider/model` from the OTLP Resource) and **enriches it with host context** (`host.name`) before forwarding. OpenClaw's `openclaw.*` Prometheus metrics can also be scraped. | 🟡 ingest ✅ |
-| **Tools** | **Push — OTLP ingest** | Arrives in the same push stream as the harness (e.g. OpenClaw's `openclaw.tool.execution.*`, Hermes' `tool.{name}` spans); converted and enriched like everything else. | 🟡 |
-| **API Calls** | **Push — OTLP ingest** (+ scrape) | HTTP/gRPC metrics and spans the components emit, received over OTLP and enriched. | 🟡 |
+| **Watched processes** | Pull — `sysinfo` process API, by name | Configure `watch_processes = ["picoclaw"]` and the watcher samples any co-located process matching those name substrings — `process.cpu.utilization`, `process.memory.usage/virtual`, tagged `process.executable.name` + `process.pid`. Harness-independent visibility into a component that exports nothing itself. | ✅ |
+| **Container** | Pull — **cgroup v2**, read directly | Point `container_cgroup` at a container's cgroup v2 directory and it reads the kernel files (`memory.current`, `memory.max`, `cpu.stat`, `io.stat`, `memory.events`) straight from the filesystem. No Docker socket, no runtime API, no extra permissions. | ✅ |
+| **Gateway (probe)** | Pull — active TCP probe | Configure `probe_targets = ["localhost:18790"]` and the watcher opens a TCP connection each tick, recording `harnesssphere.endpoint.up` (0/1) and `…probe.duration` — black-box liveness/latency for a gateway that exposes no metrics of its own. | ✅ |
+| **Gateway (scrape)** | Pull — Prometheus scrape | Scrapes the gateway's Prometheus endpoint (e.g. OpenClaw's `/api/diagnostics/prometheus`) for richer route/connection metrics. | 🟡 |
+| **Harness (sessions)** | Pull — on-disk session files | A harness like PicoClaw exports no telemetry but writes JSONL session transcripts under `~/.picoclaw/workspace/sessions/`. The session collector parses them into `harnesssphere.harness.messages` (by `role`), `harnesssphere.tool.calls` and `harnesssphere.harness.sessions`. **Token cost is not on disk**, so it isn't derived here. | ✅ |
+| **Harness (AI)** | **Push — OTLP ingest** | For tokens, durations and `gen_ai.*` traces — data *internal to the app* — OpenClaw/Hermes **push OTLP** to HarnessSphere's local receiver; it converts each signal to the canonical model, **preserves the origin identity** (`service.name`, `gen_ai.*` from the OTLP Resource) and **enriches it with host context** (`host.name`) before forwarding. Metrics, traces, logs and histograms are all accepted. | ✅ ingest |
+| **Tools** | **Push — OTLP ingest** | Tool spans/metrics arrive in the same push stream as the harness (e.g. Hermes' `execute_tool` spans); converted and enriched like everything else. | ✅ ingest |
+| **API Calls** | **Push — OTLP ingest** | HTTP/gRPC metrics and spans the components emit, received over OTLP and enriched. | 🟡 |
 
 **The journey of one signal.** A *pulled* signal (host/self) is read by a collector,
 turned into a canonical `Metric`/`Log`/`Span`, and dropped onto an internal channel. A
@@ -246,7 +250,7 @@ trait, put it behind a Cargo feature, and register it. The core never changes.
 crates/
   domain/       canonical signal model, ports, pure policies (no I/O, no OTel)
   runtime/      supervisor, scheduler, circuit breaker, batching drain
-  collectors/   source adapters: host, self (Critical); container, prometheus (optional)
+  collectors/   source adapters: host, self (Critical); process, endpoint-probe, session, container (Optional)
   ingest/       driving adapter: local OTLP receiver (feature `ingest`)
   export/       output adapters: stdout (default), OTLP (feature `otlp`)
 harnesssphere/  the binary: config → wiring → run
@@ -317,6 +321,18 @@ overrides:
 | `otlp_endpoint` | `http://localhost:4317` | OTLP/gRPC endpoint (when `exporter = "otlp"`) |
 | `service_name` | `harnesssphere` | `service.name` on the OTel Resource |
 | `metric_export_interval_secs` | `15` | How often the OTLP metric reader ships |
+| `ingest_enabled` | `false` | Enable the local OTLP/gRPC ingest receiver (feature `ingest`) |
+| `ingest_endpoint` | `0.0.0.0:4318` | Address the ingest receiver binds to |
+| `watch_processes` | `[]` | Executable-name substrings to watch (e.g. `["picoclaw"]`); empty = disabled |
+| `probe_targets` | `[]` | `host:port` endpoints to TCP-probe for liveness/latency; empty = disabled |
+| `session_dir` | `""` | Directory of harness session JSONL files (a leading `~/` is expanded); empty = disabled |
+| `session_source` | `picoclaw` | `harness.name` label for the parsed sessions |
+| `container_cgroup` | `""` | A container's cgroup v2 directory to read; empty = disabled |
+| `container_id` | `""` | `container.id` label; empty → derived from the cgroup directory's name |
+
+> Each Optional collector is **off until you configure it** — that's why a fresh run shows
+> only Host and Self. Set the keys above (or use [`config.example.toml`](config.example.toml))
+> to light up watched processes, probes, sessions and containers.
 
 | Environment variable | Overrides |
 |---|---|
@@ -351,24 +367,35 @@ HarnessSphere is under active development. Here's the honest state of things:
 **Working today**
 - The full hexagonal core: domain model, supervisor/runtime, circuit breaker and
   criticality policy.
-- **Host** and **Self** collectors (CPU, memory, swap, process footprint), Critical.
-- **stdout** exporter and a verified **OTLP/gRPC** exporter (metrics), confirmed
-  end-to-end against a real OpenTelemetry Collector.
+- **Critical** collectors — **Host** (CPU, memory, swap) and **Self** (the watcher's own
+  process footprint).
+- **Optional** collectors, each off until configured:
+  - **Watched processes** — `process.*` for any co-located process matched by name.
+  - **Endpoint probe** — `harnesssphere.endpoint.up`/`probe.duration` via black-box TCP.
+  - **Sessions** — `harnesssphere.harness.messages`/`sessions` and `tool.calls` parsed
+    from a harness's on-disk JSONL transcripts.
+  - **Container** — `container.*` (+ `harnesssphere.container.*`) read straight from
+    cgroup v2 (memory, CPU time/throttle, OOM-kills, disk I/O); unit-tested against a fake
+    cgroup tree.
+- **stdout** exporter and a verified **OTLP/gRPC** exporter — **metrics, traces, logs and
+  histograms** — confirmed end-to-end against a real SigNoz/OpenTelemetry Collector.
 - The **ingest plane** (feature `ingest`): a local OTLP/gRPC receiver that OpenClaw/Hermes
-  push to. It converts incoming **metrics and traces** to the canonical model, **enriches
-  them with host context**, and forwards them through the same pipeline. Verified
-  end-to-end for both: metrics (instance-to-instance) and **traces** (`telemetrygen` →
-  ingest → SigNoz, spans landing in the **Services/APM** view, grouped by `service.name`).
+  push to. It converts incoming **metrics, traces, logs and histograms** to the canonical
+  model, **enriches them with host context**, and forwards them through the same pipeline.
+  Verified end-to-end: metrics (instance-to-instance), **traces** (spans landing in the
+  **Services/APM** view, grouped by `service.name`) and **logs** (in the **Logs** tab).
 - Resilience proven by tests: a persistently-failing Critical source exits non-zero; a
   failing Optional source never brings the watcher down.
+- CI: `cargo-audit` security scan, PR-driven version bump + GitHub release, a manual
+  crates.io publish workflow, and automated DeepSeek PR review.
+- A bundled **SigNoz** stack and a ready-made dashboard — see [`deploy/signoz/`](deploy/signoz/).
 
 **On the roadmap**
-- OTLP **logs** ingest+export and **histogram** metric ingest (for
-  `gen_ai.client.token.usage`).
+- **Gateway Prometheus scrape** (OpenClaw `/api/diagnostics/prometheus`) — the last Tier 2 item.
 - Convention normalization in the ingest plane (Hermes `llm.token_count.*` → `gen_ai.*`),
-  `container.id` enrichment, content redaction, and an HTTP (`:4318`) receiver.
-- The Optional collectors: container (cgroup v2), gateway/Prometheus scrape.
-- The cross-compilation release pipeline.
+  GenAI content redaction, and an HTTP (`:4318`) OTLP receiver.
+- Remaining host signals (disk, network, filesystem) and the richer gateway/API metrics.
+- The cross-compilation release pipeline (musl, Raspberry Pi, macOS universal).
 
 The full technical specification, the complete OTel mapping matrix, and the design
 decisions live in [`.specs/`](.specs/).
