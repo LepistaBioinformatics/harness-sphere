@@ -1,0 +1,3 @@
+# HELP openclaw_telemetry_exporter_total Telemetry exporter lifecycle events.
+# TYPE openclaw_telemetry_exporter_total counter
+openclaw_telemetry_exporter_total{exporter="diagnostics-prometheus",reason="configured",signal="metrics",status="started"} 1

@@ -9,8 +9,8 @@ use std::sync::Arc;
 
 use config::Config;
 use harnesssphere_collectors::{
-    ContainerCollector, EndpointProbeCollector, HostCollector, ProcessCollector, SelfCollector,
-    SessionCollector,
+    ContainerCollector, EndpointProbeCollector, HostCollector, ProcessCollector,
+    PrometheusCollector, SelfCollector, SessionCollector,
 };
 use harnesssphere_domain::{SignalExporter, SignalSource};
 use harnesssphere_export::StdoutExporter;
@@ -69,6 +69,14 @@ async fn main() {
         sources.push(Box::new(ContainerCollector::new(
             cfg.container_cgroup.clone(),
             cfg.container_id.clone(),
+            cfg.host_interval(),
+        )));
+    }
+    if !cfg.prometheus_scrape_url.is_empty() {
+        sources.push(Box::new(PrometheusCollector::new(
+            cfg.prometheus_scrape_url.clone(),
+            cfg.prometheus_token(),
+            cfg.prometheus_harness_name.clone(),
             cfg.host_interval(),
         )));
     }

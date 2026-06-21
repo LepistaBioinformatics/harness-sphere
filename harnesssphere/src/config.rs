@@ -39,6 +39,15 @@ pub struct Config {
     /// `container.id` label for the cgroup metrics. Empty → derived from the cgroup
     /// directory's name.
     pub container_id: String,
+    /// `http://host:port/path` Prometheus exposition endpoint to scrape (e.g. OpenClaw's
+    /// "http://127.0.0.1:18789/api/diagnostics/prometheus"). Empty = disabled.
+    pub prometheus_scrape_url: String,
+    /// Path to a file holding the bearer token for the scrape (the endpoint is auth-protected).
+    /// Empty = no auth. The token is never read from inline config; the env var
+    /// `HARNESSSPHERE_PROMETHEUS_TOKEN` overrides this when set.
+    pub prometheus_token_file: String,
+    /// `harness.name` label stamped on the scraped metrics.
+    pub prometheus_harness_name: String,
 }
 
 impl Default for Config {
@@ -62,6 +71,9 @@ impl Default for Config {
             container_cgroup: String::new(),
             // Empty → the collector derives the id from the cgroup directory's name.
             container_id: String::new(),
+            prometheus_scrape_url: String::new(),
+            prometheus_token_file: String::new(),
+            prometheus_harness_name: "openclaw".to_owned(),
         }
     }
 }
@@ -90,5 +102,33 @@ impl Config {
     }
     pub fn self_interval(&self) -> Duration {
         Duration::from_secs(self.self_interval_secs.max(1))
+    }
+
+    /// Resolves the Prometheus scrape bearer token (secret) from the environment or token file,
+    /// in that order. Never returns a token configured inline in the TOML.
+    pub fn prometheus_token(&self) -> Option<String> {
+        if let Ok(v) = std::env::var("HARNESSSPHERE_PROMETHEUS_TOKEN") {
+            let v = v.trim().to_owned();
+            if !v.is_empty() {
+                return Some(v);
+            }
+        }
+        if !self.prometheus_token_file.is_empty() {
+            match std::fs::read_to_string(&self.prometheus_token_file) {
+                Ok(s) => {
+                    let t = s.trim().to_owned();
+                    if !t.is_empty() {
+                        return Some(t);
+                    }
+                }
+                Err(e) => {
+                    eprintln!(
+                        "warning: failed to read prometheus_token_file '{}': {e}",
+                        self.prometheus_token_file
+                    );
+                }
+            }
+        }
+        None
     }
 }
