@@ -33,10 +33,10 @@ merge a `release/*` PR → tag + cross-built binaries + GitHub Release; v0.1.1 p
 `publish-crates` (manual; needs `CARGO_REGISTRY_TOKEN` — set; dry-run validated, real
 publish not yet run).
 
-**Backlog (low priority):** Tier 2 — `container` (cgroup v2), `prometheus` scrape of
-OpenClaw `/api/diagnostics/prometheus`. Polish — DeepSeek dedup/prompt-in-file/labeled-run;
+**Backlog (low priority):** Polish — DeepSeek dedup/prompt-in-file/labeled-run;
 `ChannelSink` drop-oldest; Optional re-spawn; Hermes `llm.token_count.*`→`gen_ai.*`
 normalization; GenAI content redaction (GA-05); run the real crates.io publish.
+(Tier 2 closed: `container` cgroup v2 + `prometheus` scrape both shipped.)
 
 ---
 
@@ -140,8 +140,13 @@ bring it down (`tests/crash.rs`, 3 tests); happy-path host+self→stdout; policy
    both landed in SigNoz (`process.executable.name=picoclaw`, `harnesssphere.endpoint.up`).
    ✅ `container` (cgroup v2: memory.current/max, cpu.stat, io.stat, memory.events →
    `container.*` + `harnesssphere.container.*`, verified against a real Docker container's
-   cgroup). Still TODO: `prometheus` (scrape of OpenClaw
-   `/api/diagnostics/prometheus`).
+   cgroup). ✅ `prometheus` (scrape of OpenClaw's auth-protected
+   `/api/diagnostics/prometheus`, branch `feat/prometheus-scrape-collector`): no-dep HTTP/1.1
+   `GET` (`Connection: close`) + bearer token (file/env, never inline) + TYPE-aware text
+   parser + histogram reassembly. Curated mapping: GenAI → `gen_ai.client.token.usage` /
+   `gen_ai.client.operation.duration` (semconv); the rest → `harnesssphere.openclaw.*`.
+   **Verified e2e** against a live OpenClaw (real model-call/token/cost series + the two
+   `gen_ai.*` histograms with semconv attributes).
 4. Release pipeline: `cross` + `cargo-zigbuild` for the 6 targets.
 
 ## Product findings

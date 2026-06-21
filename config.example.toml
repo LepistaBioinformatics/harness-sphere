@@ -31,3 +31,12 @@ session_source = "picoclaw"      # harness.name label on the emitted metrics
 # Read a container's cgroup v2 directly (no Docker socket) -> container.* metrics.
 container_cgroup = ""            # e.g. "/sys/fs/cgroup/system.slice/docker-<id>.scope"
 container_id = ""               # container.id label (empty -> derived from the cgroup dir name)
+
+# Scrape a Prometheus exposition endpoint (e.g. OpenClaw's diagnostics-prometheus plugin).
+# GenAI metrics map to gen_ai.* semconv; the rest to harnesssphere.openclaw.*.
+prometheus_scrape_url = ""       # e.g. "http://127.0.0.1:18789/api/diagnostics/prometheus"
+# The endpoint is auth-protected. Point this at a file holding the gateway token, or set the
+# env var HARNESSSPHERE_PROMETHEUS_TOKEN (it overrides the file). Never inline the token here.
+prometheus_token_file = ""       # e.g. "/etc/harnesssphere/openclaw-gateway-token"
+prometheus_harness_name = "openclaw"  # harness.name label on the scraped metrics
+prometheus_interval_secs = 15    # scrape cadence (a network scrape, slower than host metrics)

@@ -8,6 +8,7 @@ mod container;
 mod host;
 mod probe;
 mod process;
+mod prometheus;
 mod self_watcher;
 mod session;
 
@@ -15,5 +16,6 @@ pub use container::ContainerCollector;
 pub use host::HostCollector;
 pub use probe::EndpointProbeCollector;
 pub use process::ProcessCollector;
+pub use prometheus::PrometheusCollector;
 pub use self_watcher::SelfCollector;
 pub use session::SessionCollector;

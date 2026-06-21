@@ -383,6 +383,17 @@ and forwarded. Where there is no `/metrics`, the watcher does an active health p
 | L | dropped connection / upstream 5xx | L (WARN/ERROR) | `gateway.name`, `route`, `status_code` |
 | T | (passthrough) | T | if the gateway propagates `traceparent`, the watcher forwards the context for correlation |
 
+> **Implemented (`prometheus` collector).** OpenClaw's real exposition is harness/AI metrics
+> (`openclaw_*`), not HTTP-route metrics, so the curated scrape does **not** force them into
+> `http.server.*`. Instead: the GenAI pair follows the OTel GenAI semconv
+> (`openclaw_gen_ai_client_token_usage` → `gen_ai.client.token.usage`,
+> `openclaw_model_call_duration_seconds` → `gen_ai.client.operation.duration`); every other
+> family is namespaced under `harnesssphere.openclaw.*` (labels → attributes, `# TYPE` →
+> `MetricKind`, histograms reassembled into explicit-bucket points). The endpoint is
+> auth-protected: the bearer token is read from a file or `HARNESSSPHERE_PROMETHEUS_TOKEN`,
+> never inline config. The idealized `http.server.*` rows above remain the target for a true
+> HTTP-gateway source (e.g. a future Envoy/Nginx scrape).
+
 ### 3.e Harness (AI) — **OPTIONAL**  ← the heart of the differentiator
 
 Follows the **GenAI semantic conventions** (`gen_ai.*`). Verified attributes:
