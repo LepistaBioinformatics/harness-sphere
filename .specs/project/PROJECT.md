@@ -1,12 +1,27 @@
 # HarnessSphere — PROJECT
 
+> **This tool is exclusive to zombie-crab.** It was born generic — a watcher for
+> any host running the Claw/Harness ecosystem — and that is no longer what it is.
+> It is now the observability component of
+> [zombie-crab-project](https://github.com/LepistaBioinformatics/zombie-crab-project),
+> which runs it as a submodule at `crab/harness-sphere`. Decisions that would make
+> it generic again are out of scope; decisions that make it fit that stack better
+> are the point. The planning record lives in the parent repository, under
+> `.specs/features/harness-sphere-integration/` and
+> `.specs/features/harness-sphere-zombie-crab-scope/`.
+
 ## Vision
 
-A unified, single-binary agent/watcher that collects telemetry from **every layer
-of a host running the Claw/Harness ecosystem** — infrastructure, container,
-gateway, harness (AI), tools and API calls — and dispatches everything via **OpenTelemetry
-(OTLP)** to any compatible backend (OTel Collector, Grafana/Tempo/Mimir/Loki,
-vendors).
+A single-binary watcher for **one stack**: every layer of a zombie-crab
+deployment — the host, the watcher itself, the mycelium gateway, crab-shell-proxy,
+the exoskeleton webapp, and the per-user picoclaw containers the proxy spawns —
+dispatched via **OpenTelemetry (OTLP)** to any compatible backend.
+
+**Why a dedicated tool rather than an off-the-shelf agent.** zombie-crab creates
+and destroys a picoclaw container per `(tenant, subscription, agent, user)` at
+runtime, and the container's name hashes that tuple one way. Nothing generic can
+attribute a container to the member it belongs to; that attribution is the whole
+job, and it is what this watcher is being shaped around.
 
 ## Design principles (non-negotiable)
 
@@ -23,12 +38,24 @@ vendors).
 6. **Idiomatic OTel standard.** Metric/attribute names follow the official *semantic
    conventions* (system.\*, process.\*, container.\*, http.\*, rpc.\*, gen_ai.\*).
 
-## Non-goals (v1)
+## Non-goals
 
 - It is not a storage backend nor a dashboard (delegates to the Collector/backend).
 - It does not do APM via third-party code instrumentation (it only observes from the
-  outside + ingests the signals the harness exposes).
+  outside).
 - It does not orchestrate nor restart the monitored targets.
+- **It is not a general-purpose watcher.** Support for a host that is not a
+  zombie-crab deployment is not a goal, and a collector with no source in that
+  stack does not stay for symmetry.
+- **It never holds a Docker socket.** crab-shell-proxy already mounts one and runs
+  as root; a second socket-mounting service would double the blast radius of the
+  stack's worst-case compromise. Instance identity comes from the proxy's read-only
+  inventory endpoint instead.
+- **It never instruments the components it watches.** picoclaw, mycelium and the
+  webapp stay black boxes, observed from outside or derived from disk.
+- **Token cost is not obtainable and this tool does not pretend otherwise.**
+  picoclaw does not write token counts to disk, and the only path that ever existed
+  here was scraping an OpenClaw Prometheus endpoint that this stack does not run.
 
 ## Target stack
 
@@ -37,6 +64,41 @@ vendors).
 - `sysinfo` (host/process), direct cgroup v2 reading (container), `tracing` +
   `tracing-opentelemetry` for self-observability.
 - Cross-compilation via `cross` + `cargo-zigbuild`.
+
+**Deployment shape, which contradicts design principle 1 and does so knowingly.**
+It ships as a **compose service on `zombie_net`**, not as a systemd unit on the
+host. The picoclaw containers publish no host ports — `18790` exists only on the
+internal network — so a host binary would be structurally blind to the layer this
+watcher exists for.
+
+The obvious objection does not apply: a container still sees the *host's* memory
+and CPU, because `sysinfo` reads `/proc/meminfo` and `/proc/stat` and Docker does
+not namespace them. Measured, not assumed — a run capped at `-m 512m` reported the
+host's 33 GB and ignored the cgroup limit entirely. **No `/proc` or `/sys` bind is
+needed.** The converse is also true and is not a defect: this watcher cannot see
+its *own* container ceiling through `HostCollector`.
+
+## The six layers
+
+The layer model is being cut from seven to the six this stack actually has. Named
+here because it is the shape everything else follows; the work itself is the
+parent repository's `harness-sphere-zombie-crab-scope`.
+
+| Layer | Component | Criticality |
+|---|---|---|
+| Host | the machine (*hospedeiro*) | Critical |
+| Watcher | this binary observing itself (*self*) | Critical |
+| Gateway | `mycelium-gateway` | Optional |
+| Proxy | `crab-shell-proxy` | Optional |
+| Webapp | `chat-webapp` (repo: `crab-exoskeleton-webapp`) | Optional |
+| Harness | the per-user `picoclaw` containers | Optional |
+
+`Api` and `Tools` go: no zombie-crab source fills either. **`Container` stops
+being a layer and becomes a dimension** — everything here runs in a container, so
+cgroup counters belong to the layer of whatever the container *is*, and a picoclaw
+container's memory is a Harness signal. `tool.calls` survives the loss of the
+`Tools` layer: it comes from picoclaw's session JSONL, which is a real source, and
+moves under Harness.
 
 ## Planning status
 

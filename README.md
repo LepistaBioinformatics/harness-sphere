@@ -1,5 +1,23 @@
 # HarnessSphere
 
+> ### ⚠️ This tool is exclusive to zombie-crab
+>
+> HarnessSphere started life as a general-purpose watcher for any host running the
+> Claw/Harness ecosystem. It is now the observability component of
+> **[zombie-crab-project](https://github.com/LepistaBioinformatics/zombie-crab-project)**,
+> which consumes it as a submodule at `crab/harness-sphere`, and it is being reshaped
+> around that stack: six layers instead of seven, dynamic per-tenant instance discovery,
+> and collectors with no source in that stack removed rather than kept for symmetry.
+>
+> **If you came here for a generic OTel watcher, this is not it** — and the parts of
+> this README describing layers, collectors and configuration are being narrowed to
+> match. Crates.io publishing is disabled; binary releases continue.
+>
+> Two things it will never do: hold a Docker socket (the stack's proxy already has
+> one, and a second would double the blast radius), and report **token cost** —
+> picoclaw does not write token counts to disk, and the only path that ever existed
+> was scraping an endpoint this stack does not run.
+
 **One tiny watcher. Every layer of your host. All of it spoken in fluent OpenTelemetry.**
 
 HarnessSphere is a single, self-contained binary that sits on a machine running the

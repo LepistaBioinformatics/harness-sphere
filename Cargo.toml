@@ -17,8 +17,11 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/LepistaBioinformatics/harness-sphere"
 
 [workspace.dependencies]
-# `version` is required (alongside `path`) so the crates are publishable to crates.io.
-# `cargo set-version` keeps these in sync with the package version on release.
+# The `version` fields stay, but NOT for crates.io — publishing is disabled (the
+# workflow is gone). Five generically-named crates on a public registry contradict a
+# tool that exists for one stack, and a registry publish is the one thing that cannot
+# be withdrawn cleanly. They remain because `cargo set-version` and the binary release
+# flow both key off them.
 harnesssphere-domain = { path = "crates/domain", version = "0.2.0" }
 harnesssphere-runtime = { path = "crates/runtime", version = "0.2.0" }
 harnesssphere-collectors = { path = "crates/collectors", version = "0.2.0" }
