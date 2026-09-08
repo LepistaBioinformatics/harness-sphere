@@ -6,8 +6,8 @@
 //! property it protects was broken.
 
 use harnesssphere_domain::{
-    CollectError, Criticality, ExportError, Layer, Metric, MetricKind, ProbeResult, Signal,
-    SignalExporter, SignalSink, SignalSource, SourceDescriptor,
+    AttrValue, CollectError, Criticality, ExportError, Layer, Metric, MetricKind, ProbeResult,
+    Signal, SignalExporter, SignalSink, SignalSource, SourceDescriptor, LAYER_ATTR,
 };
 use harnesssphere_runtime::{RuntimeConfig, Supervisor, SupervisorCmd};
 use std::sync::{Arc, Mutex};
@@ -17,13 +17,22 @@ use std::time::Duration;
 #[derive(Clone, Default)]
 struct RecordingExporter {
     seen: Arc<Mutex<Vec<(String, f64)>>>,
+    layers: Arc<Mutex<Vec<(String, Option<String>)>>>,
 }
 #[async_trait::async_trait]
 impl SignalExporter for RecordingExporter {
     async fn export(&self, batch: Vec<Signal>) -> Result<(), ExportError> {
         let mut seen = self.seen.lock().unwrap();
+        let mut layers = self.layers.lock().unwrap();
         for s in batch {
             if let Signal::Metric(m) = s {
+                let layer = m.attributes.iter().find(|(k, _)| k == LAYER_ATTR).map(
+                    |(_, v)| match v {
+                        AttrValue::Str(s) => s.clone(),
+                        other => format!("{other:?}"),
+                    },
+                );
+                layers.push((m.name.clone(), layer));
                 seen.push((m.name.clone(), m.value));
             }
         }
@@ -33,6 +42,15 @@ impl SignalExporter for RecordingExporter {
 impl RecordingExporter {
     fn names(&self) -> Vec<String> {
         self.seen.lock().unwrap().iter().map(|(n, _)| n.clone()).collect()
+    }
+    fn layers_of(&self, name: &str) -> Vec<Option<String>> {
+        self.layers
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|(n, _)| n == name)
+            .map(|(_, l)| l.clone())
+            .collect()
     }
     fn values_of(&self, name: &str) -> Vec<f64> {
         self.seen
@@ -224,5 +242,87 @@ async fn dropping_the_command_sender_does_not_stop_collection() {
         "collection stopped when the discovery channel closed"
     );
     assert!(!handle.is_finished(), "supervisor exited when discovery went away");
+    handle.abort();
+}
+
+/// Every emitted signal carries its source's layer.
+///
+/// This is a regression test for dead metadata, not a new feature: `SourceDescriptor.layer`
+/// was set by every collector and read by NOTHING -- `Layer::as_str()` had zero callers --
+/// so all six layers were invisible to any backend, not merely Proxy and Webapp.
+#[tokio::test]
+async fn every_signal_carries_its_layer() {
+    let exporter = RecordingExporter::default();
+    let sup = Supervisor::new(
+        fast_cfg(),
+        vec![Instance::boxed("inst", "layered.metric")],
+        Arc::new(exporter.clone()),
+    );
+    let handle = tokio::spawn(sup.run());
+    tokio::time::sleep(Duration::from_millis(120)).await;
+
+    let layers = exporter.layers_of("layered.metric");
+    assert!(!layers.is_empty(), "source never emitted");
+    assert!(
+        layers.iter().all(|l| l.as_deref() == Some("harness")),
+        "signals reached the exporter without their layer: {layers:?}"
+    );
+    handle.abort();
+}
+
+/// A source that stamps its own layer per signal keeps it: the supervisor fills the gap,
+/// it does not overwrite. This is what lets one probe collector serve three layers.
+#[tokio::test]
+async fn a_source_may_override_the_layer_per_signal() {
+    struct MultiLayer {
+        desc: SourceDescriptor,
+    }
+    #[async_trait::async_trait]
+    impl SignalSource for MultiLayer {
+        fn descriptor(&self) -> &SourceDescriptor {
+            &self.desc
+        }
+        async fn probe(&mut self) -> ProbeResult {
+            ProbeResult::Ready
+        }
+        async fn collect(&mut self, sink: &dyn SignalSink) -> Result<(), CollectError> {
+            // Explicit per-target layers, as EndpointProbeCollector does.
+            for layer in ["gateway", "proxy", "webapp"] {
+                sink.emit(
+                    Metric::now("multi.up", MetricKind::Gauge, 1.0)
+                        .attr(LAYER_ATTR, layer.to_owned())
+                        .into_signal(),
+                );
+            }
+            Ok(())
+        }
+    }
+
+    let exporter = RecordingExporter::default();
+    let src: Box<dyn SignalSource> = Box::new(MultiLayer {
+        desc: SourceDescriptor {
+            name: "endpoint-probe".to_owned(),
+            layer: Layer::Watcher,
+            criticality: Criticality::Optional,
+            default_interval: Duration::from_millis(10),
+        },
+    });
+    let sup = Supervisor::new(fast_cfg(), vec![src], Arc::new(exporter.clone()));
+    let handle = tokio::spawn(sup.run());
+    tokio::time::sleep(Duration::from_millis(120)).await;
+
+    let seen: std::collections::BTreeSet<_> = exporter
+        .layers_of("multi.up")
+        .into_iter()
+        .flatten()
+        .collect();
+    assert!(
+        seen.contains("gateway") && seen.contains("proxy") && seen.contains("webapp"),
+        "per-signal layers were overwritten by the descriptor's: {seen:?}"
+    );
+    assert!(
+        !seen.contains("watcher"),
+        "the supervisor overwrote a layer the source had already set: {seen:?}"
+    );
     handle.abort();
 }

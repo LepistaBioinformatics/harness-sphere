@@ -1,6 +1,19 @@
 //! Configuration via TOML + env override. Sprint 1: intervals and exporter selection.
 
 use serde::Deserialize;
+
+/// One `[[probe_targets]]` entry.
+///
+/// Both fields are REQUIRED -- there is no default layer. A target whose layer was
+/// guessed would file the proxy or the webapp under whatever the guess was, which is the
+/// exact defect this replaced: one collector stamping one layer on every target.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ProbeTargetCfg {
+    /// `host:port`. The port is not optional.
+    pub address: String,
+    /// One of: host, watcher, gateway, proxy, webapp, harness.
+    pub layer: String,
+}
 use std::time::Duration;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -22,8 +35,9 @@ pub struct Config {
     pub metric_export_interval_secs: u64,
     /// Process executable-name substrings to watch (e.g. ["picoclaw"]). Empty = disabled.
     pub watch_processes: Vec<String>,
-    /// `host:port` endpoints to TCP-probe for liveness/latency. Empty = disabled.
-    pub probe_targets: Vec<String>,
+    /// Endpoints to TCP-probe for liveness/latency, each with the layer it belongs to.
+    /// Empty = disabled.
+    pub probe_targets: Vec<ProbeTargetCfg>,
     /// Directory of harness session JSONL files (e.g. "~/.picoclaw/workspace/sessions").
     /// Empty = disabled. Derives message/tool counts (no tokens — not on disk).
     pub session_dir: String,

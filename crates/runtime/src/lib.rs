@@ -6,8 +6,8 @@
 
 use futures::FutureExt;
 use harnesssphere_domain::{
-    classify_failure, CircuitBreaker, Criticality, FailureAction, ProbeResult, Signal,
-    SignalExporter, SignalSink, SignalSource,
+    classify_failure, AttrValue, CircuitBreaker, Criticality, FailureAction, Layer, ProbeResult,
+    Signal, SignalExporter, SignalSink, SignalSource, LAYER_ATTR,
 };
 use std::collections::HashMap;
 use std::panic::AssertUnwindSafe;
@@ -63,6 +63,34 @@ impl Default for RuntimeConfig {
             batch_interval: Duration::from_secs(5),
             critical_threshold: 3,
         }
+    }
+}
+
+/// Wraps the sink and stamps the source's layer on every signal that does not carry one.
+///
+/// **Centralised deliberately.** The layer was pure metadata until now: every collector
+/// set `SourceDescriptor.layer` and *nothing read it* — `Layer::as_str()` had zero
+/// callers — so no layer ever reached a backend. Leaving each collector to stamp its own
+/// would reproduce exactly that failure: the next collector added forgets, and the
+/// omission is invisible because a missing attribute looks like a missing series.
+///
+/// "…that does not carry one" is what lets a multi-target source stamp a different layer
+/// per target while everything else inherits its descriptor's.
+struct LayerSink {
+    inner: ChannelSink,
+    layer: Layer,
+}
+
+impl SignalSink for LayerSink {
+    fn emit(&self, mut signal: Signal) {
+        let attrs = signal.attributes_mut();
+        if !attrs.iter().any(|(k, _)| k == LAYER_ATTR) {
+            attrs.push((
+                LAYER_ATTR.to_owned(),
+                AttrValue::Str(self.layer.as_str().to_owned()),
+            ));
+        }
+        self.inner.emit(signal);
     }
 }
 
@@ -303,6 +331,10 @@ async fn supervise_source(
     mut stop_rx: oneshot::Receiver<()>,
 ) {
     let desc = source.descriptor().clone();
+    let sink = LayerSink {
+        inner: sink,
+        layer: desc.layer,
+    };
     let mut breaker = CircuitBreaker::new(critical_threshold);
 
     // Initial probe. For a discovered source this runs at discovery, not at boot.

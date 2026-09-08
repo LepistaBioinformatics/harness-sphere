@@ -13,7 +13,7 @@ mod session;
 
 pub use container::ContainerCollector;
 pub use host::HostCollector;
-pub use probe::EndpointProbeCollector;
+pub use probe::{EndpointProbeCollector, ProbeTarget};
 pub use process::ProcessCollector;
 pub use self_watcher::SelfCollector;
 pub use session::SessionCollector;

@@ -9,10 +9,10 @@ use std::sync::Arc;
 
 use config::Config;
 use harnesssphere_collectors::{
-    ContainerCollector, EndpointProbeCollector, HostCollector, ProcessCollector,
+    ContainerCollector, EndpointProbeCollector, HostCollector, ProbeTarget, ProcessCollector,
     SelfCollector, SessionCollector,
 };
-use harnesssphere_domain::{SignalExporter, SignalSource};
+use harnesssphere_domain::{Layer, SignalExporter, SignalSource};
 use harnesssphere_export::StdoutExporter;
 use harnesssphere_runtime::{RuntimeConfig, Supervisor};
 
@@ -53,8 +53,25 @@ async fn main() {
         )));
     }
     if !cfg.probe_targets.is_empty() {
+        let mut targets = Vec::with_capacity(cfg.probe_targets.len());
+        for t in &cfg.probe_targets {
+            // Strict on purpose: an unrecognised layer is a boot-time config error, loud.
+            // Defaulting it would silently file a service under the wrong layer, which is
+            // indistinguishable from correct output until someone reads a dashboard.
+            match Layer::parse(&t.layer) {
+                Some(layer) => targets.push(ProbeTarget::new(t.address.clone(), layer)),
+                None => {
+                    eprintln!(
+                        "probe_targets: unknown layer '{}' for '{}' \
+                         (expected one of: host, watcher, gateway, proxy, webapp, harness)",
+                        t.layer, t.address
+                    );
+                    std::process::exit(2);
+                }
+            }
+        }
         sources.push(Box::new(EndpointProbeCollector::new(
-            cfg.probe_targets.clone(),
+            targets,
             cfg.host_interval(),
         )));
     }
