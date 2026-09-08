@@ -12,7 +12,7 @@
 //! crate depends on the other.
 
 use async_trait::async_trait;
-use harnesssphere_collectors::{discover, SessionCollector, Workspace};
+use harnesssphere_collectors::{discover, LearningCollector, SessionCollector, Workspace};
 use harnesssphere_domain::{
     CollectError, Criticality, Layer, Metric, MetricKind, ProbeResult, SignalSink, SignalSource,
     SourceDescriptor,
@@ -87,6 +87,9 @@ pub struct Discovery {
     pub data_root: PathBuf,
     pub interval: Duration,
     pub session_interval: Duration,
+    /// Slower than `session_interval` (DEC-28): skills, memory and the graph change
+    /// rarely, while transcripts change constantly.
+    pub learning_interval: Duration,
     pub harness_name: String,
     pub workspaces: Arc<AtomicU64>,
     pub scans: Arc<AtomicU64>,
@@ -114,19 +117,30 @@ impl Discovery {
                 .map(|w| (w.source_name(), w))
                 .collect();
 
+            // Two sources per workspace, on different cadences. Their descriptor names
+            // differ by prefix, which matters: the supervisor keys its registry by name
+            // and rejects duplicates.
             for (name, ws) in &current {
                 if known.contains_key(name) {
                     continue;
                 }
-                let collector =
-                    SessionCollector::new(ws.clone(), &self.harness_name, self.session_interval);
-                if cmds
-                    .send(SupervisorCmd::Add(Box::new(collector)))
-                    .await
-                    .is_err()
-                {
-                    tracing::warn!("supervisor is gone — discovery stopping");
-                    return;
+                let sources: Vec<Box<dyn harnesssphere_domain::SignalSource>> = vec![
+                    Box::new(SessionCollector::new(
+                        ws.clone(),
+                        &self.harness_name,
+                        self.session_interval,
+                    )),
+                    Box::new(LearningCollector::new(
+                        ws.clone(),
+                        &self.harness_name,
+                        self.learning_interval,
+                    )),
+                ];
+                for source in sources {
+                    if cmds.send(SupervisorCmd::Add(source)).await.is_err() {
+                        tracing::warn!("supervisor is gone — discovery stopping");
+                        return;
+                    }
                 }
                 tracing::info!(workspace = %name, "workspace discovered");
             }
@@ -135,13 +149,12 @@ impl Discovery {
                 if current.contains_key(name) {
                     continue;
                 }
-                if cmds
-                    .send(SupervisorCmd::Remove(name.clone()))
-                    .await
-                    .is_err()
-                {
-                    tracing::warn!("supervisor is gone — discovery stopping");
-                    return;
+                // Both sources retire; each emits its own terminal signal (DEC-12).
+                for key in [name.clone(), format!("learning:{name}")] {
+                    if cmds.send(SupervisorCmd::Remove(key)).await.is_err() {
+                        tracing::warn!("supervisor is gone — discovery stopping");
+                        return;
+                    }
                 }
                 tracing::info!(workspace = %name, "workspace retired");
             }

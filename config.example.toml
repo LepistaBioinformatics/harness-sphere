@@ -34,6 +34,9 @@ probe_targets = []
 data_root = ""
 discovery_interval_secs = 30
 session_interval_secs = 60
+# Skills, memory files and the knowledge graph. Slower than sessions on purpose: these
+# change rarely, while transcripts change constantly.
+learning_interval_secs = 300
 session_source = "picoclaw"      # harness.name label on the emitted metrics
 
 # Read a container's cgroup v2 directly (no Docker socket) -> container.* metrics.

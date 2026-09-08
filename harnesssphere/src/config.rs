@@ -58,6 +58,9 @@ pub struct Config {
     /// discovery on purpose: finding a workspace is a directory glob, reading one is IO
     /// proportional to conversation history.
     pub session_interval_secs: u64,
+    /// How often each workspace's skills, memory and knowledge graph are re-read. Slower
+    /// than the session interval by default: these change rarely (DEC-28).
+    pub learning_interval_secs: u64,
     /// Label for the harness whose sessions are read (`harness.name`).
     pub session_source: String,
     /// A container's cgroup v2 directory to read (e.g.
@@ -83,6 +86,7 @@ impl Default for Config {
             data_root: String::new(),
             discovery_interval_secs: 30,
             session_interval_secs: 60,
+            learning_interval_secs: 300,
             session_source: "picoclaw".to_owned(),
             container_cgroup: String::new(),
             // Empty → the collector derives the id from the cgroup directory's name.
@@ -121,5 +125,8 @@ impl Config {
     }
     pub fn session_interval(&self) -> Duration {
         Duration::from_secs(self.session_interval_secs.max(1))
+    }
+    pub fn learning_interval(&self) -> Duration {
+        Duration::from_secs(self.learning_interval_secs.max(1))
     }
 }
