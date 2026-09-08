@@ -112,7 +112,7 @@ crab-shell-proxy, which owns the Docker socket and creates one picoclaw containe
 
 | Signal | Key | Type | What it tells you | Status |
 |---|---|---|---|---|
-| M | `harnesssphere.endpoint.up` / `…probe.duration` | G | Liveness and latency, tagged `server.address` | 🟡 |
+| M | `harnesssphere.endpoint.up` / `…probe.duration` | G | Liveness and latency, tagged `server.address` and `harnesssphere.layer` | ✅ |
 | M | instance inventory freshness | G | Whether `GET /v1/instances` is answering | 🟡 |
 
 ### 🖼️ Webapp — *Optional*
@@ -121,24 +121,25 @@ crab-exoskeleton-webapp, the chat UI.
 
 | Signal | Key | Type | What it tells you | Status |
 |---|---|---|---|---|
-| M | `harnesssphere.endpoint.up` / `…probe.duration` | G | Liveness and latency, tagged `server.address` | 🟡 |
+| M | `harnesssphere.endpoint.up` / `…probe.duration` | G | Liveness and latency, tagged `server.address` and `harnesssphere.layer` | ✅ |
 
-> **Proxy and Webapp are 🟡 for one specific reason.** The probe collector currently
-> stamps *every* target with the Gateway layer, so all three services file themselves
-> under "gateway" today. The layer variants exist; giving each probe target its own
-> layer is the next change.
+> **These were three anonymous rows until recently.** The probe collector stamped
+> `Layer::Gateway` on *every* target — and worse, the layer was never emitted at all, so
+> all six layers were invisible to any backend. Each target now names its own layer.
 
 ### 🧠 Harness (picoclaw) — *Optional*
 
-The per-tenant agent containers this stack exists to run — and the layer that still needs
-the most work, because instances are created at runtime while every source here is
-resolved once at boot.
+The per-tenant agent containers this stack exists to run. Discovery rescans the tenant
+tree and runs **one session collector per `(tenant, subscription, agent, user)`**, each
+stamped with that tuple, so a number here describes one member rather than an average.
 
 | Signal | Key | Type | What it tells you | Status |
 |---|---|---|---|---|
-| M | `harnesssphere.harness.messages` | G | Messages by `role`, absolute count in the on-disk transcripts | ✅ |
-| M | `harnesssphere.harness.sessions` | G | Number of session transcripts on disk | ✅ |
+| M | `harnesssphere.harness.messages` | G | Messages by `role`, absolute count across **both** session directories | ✅ |
+| M | `harnesssphere.harness.sessions` | G | Conversations — `durable/` mirrors and cron runs excluded | ✅ |
 | M | `harnesssphere.tool.calls` | G | Tool calls present in the transcripts | ✅ |
+| M | `harnesssphere.harness.cron.sessions` | G | Scheduled-task runs, reported separately so the exclusion above is auditable | ✅ |
+| M | `harnesssphere.discovery.workspaces` / `…discovery.scans` | G | How many workspaces are watched, and whether discovery is still scanning | ✅ |
 | M | `container.cpu.time` / `container.memory.usage` | C / UDC | Per-container CPU and memory, read from cgroup v2 | ✅ |
 | M | `harnesssphere.container.memory.limit` / `…memory.oom` / `…cpu.throttled` | G / C | Memory ceiling, OOM-kills, CPU throttling | ✅ |
 | M | per-instance liveness, attributed by tenant | G | Which tenant's agent is up | 🟡 |
@@ -147,6 +148,14 @@ resolved once at boot.
 > finds on disk, re-derived each scrape. Pushing an absolute value through the OTLP
 > Counter path (`add()`) would double-count every tick. These survive restarts — the
 > truth lives on disk — and can legitimately fall when transcripts are rotated away.
+
+> **Four distortions are corrected, and each has a test.** Project conversations live in a
+> sibling `workspace-<project>/sessions` (missing it drops **42%** of conversations on the
+> workspace measured); `sessions/durable/` mirrors the live files 1:1, so counting it
+> **exactly doubles** every number; every scheduled-task run writes its own session file,
+> drifting `harness.sessions` from *conversations* to *conversations plus every cron run
+> since provisioning*; and transcripts are read **incrementally**, with a file that shrank
+> re-read from zero rather than treated as a negative delta.
 
 Every signal carries a Resource so you always know where it came from: `service.name`,
 `service.version`, `host.name`, `host.id`, `host.arch`, `os.type`.
@@ -165,7 +174,8 @@ telemetry at it, and a receiver with no sender is code that can only ever be wro
 | **Watched processes** | `sysinfo`, by name | `watch_processes = ["picoclaw"]` samples any co-located process matching those substrings. |
 | **Probes** | Active TCP connect | `probe_targets` opens a connection each tick, recording `up` (0/1) and duration. A target that is down reads an honest **0** rather than going absent — which is why the watcher needs no `depends_on` ordering and survives booting before the things it watches. |
 | **Containers** | **cgroup v2, read directly** | Kernel files (`memory.current`, `memory.max`, `cpu.stat`, `io.stat`, `memory.events`) straight off the filesystem. No Docker socket, no runtime API. |
-| **Sessions** | On-disk JSONL transcripts | picoclaw exports no telemetry but writes JSONL under its workspace. Parsed into message, session and tool-call counts. **Content is never read into a signal.** |
+| **Workspaces** | Directory glob of the tenant tree | `tenants/*/subscriptions/*/agents/*/users/*`, rescanned on an interval. Bounded on purpose: a glob, never a transcript walk. Each workspace found becomes one session source, added to a **running** supervisor. |
+| **Sessions** | On-disk JSONL transcripts, read incrementally | picoclaw exports no telemetry but writes JSONL under its workspace. Parsed into message, session and tool-call counts, per member. **Content is never read into a signal** — `content` is not even deserialized. |
 
 > **Cadence** is per collector (`host_interval_secs`, `self_interval_secs`); the OTLP
 > export ships on `metric_export_interval_secs`.
@@ -291,8 +301,9 @@ is kept on purpose** — the resilience model depends on `catch_unwind`.
 
 ### What is flowing right now
 
-These ten series (5 + 3 + 2) were read off the **live Prometheus** of a running stack, not
-inferred from the code.
+The Host, Watcher and probe series were read off the **live Prometheus** of a running
+stack. The Harness series were verified end to end against a two-tenant tree carrying
+every distortion at once — a project workspace, a `durable/` mirror and a cron session.
 
 > **The names in this table are the Prometheus-exposed forms, not the OTel wire names.**
 > The OTLP→Prometheus translation rewrites dots to underscores and appends a unit suffix,
@@ -305,9 +316,9 @@ inferred from the code.
 | **Host** | `system_cpu_utilization`, `system_memory_usage_bytes`, `system_memory_utilization`, `system_paging_usage_bytes`, `system_paging_utilization` | ✅ |
 | **Watcher** | `process_cpu_utilization`, `process_memory_usage_bytes`, `process_memory_virtual_bytes` | ✅ |
 | **Gateway** | `harnesssphere_endpoint_up`, `harnesssphere_endpoint_probe_duration_seconds` | ✅ |
-| **Proxy** | *(probed, but filed under Gateway — see below)* | ⚠️ |
-| **Webapp** | *(probed, but filed under Gateway — see below)* | ⚠️ |
-| **Harness (picoclaw)** | **nothing** | ❌ |
+| **Proxy** | `harnesssphere_endpoint_up`, `harnesssphere_endpoint_probe_duration_seconds` | ✅ |
+| **Webapp** | `harnesssphere_endpoint_up`, `harnesssphere_endpoint_probe_duration_seconds` | ✅ |
+| **Harness (picoclaw)** | `harnesssphere_harness_messages` (by `role`), `_harness_sessions`, `_tool_calls`, `_harness_cron_sessions` — **one series per workspace**, attributed with the full `(tenant, subscription, agent, user)` tuple | ✅ |
 
 Also working: the hexagonal core (supervisor, circuit breaker, criticality policy), both
 exporters verified end to end, resilience proven by tests (a persistently-failing Critical
@@ -317,35 +328,27 @@ against live data.
 
 ### What is missing, and why
 
-**1. picoclaw usage — the layer this tool exists for — collects nothing today.**
+**1. The proxy's live instance inventory is not consumed yet.**
 
-`SessionCollector` **is in this tree** and emits exactly the right three metrics —
-`harnesssphere.harness.messages` (by `role`), `harnesssphere.tool.calls`,
-`harnesssphere.harness.sessions`. It is switched **off**: `session_dir = ""` in
-`config.zombie-crab.toml`.
+Discovery reads the **on-disk** tenant tree — DEC-10's resilient surface, and enough to
+attribute every conversation to a member. What it cannot yet tell you is whether that
+member's container is actually *running*; that needs `GET /v1/instances` on
+crab-shell-proxy.
 
-That empty string is deliberate, not an oversight, and filling it in would not fix
-anything. Three independent problems, each of which alone would invalidate the number:
+Until then the watcher sits in exactly the state FR-D5 calls the degraded one: session
+metrics from disk, no live container state. **That is a designed fallback, not a gap in
+the build** — it is the behaviour the whole two-surface design exists to guarantee when
+the proxy is down.
 
-- **It takes one directory, resolved at boot.** The proxy creates a workspace per
-  `(tenant, subscription, agent, user)` at runtime. Pointing the field at one of them
-  produces a metric that describes a single tenant and *reads* like it describes the
-  stack.
-- **It could not read them anyway.** The tenant tree is `root:root 0700`. The privilege
-  that fixes this is real but lands with the session rewrite, not before.
-- **It would count wrong.** Measured on a live workspace: a collector globbing only
-  `workspace/sessions` misses **5 of 12 conversations — 42%** — because project
-  conversations live in a sibling `workspace-<project>/sessions`. And every scheduled-task
-  run writes its own session file, so `harness.sessions` drifts from "conversations" to
-  "conversations plus every cron run since provisioning".
+**2. Per-instance liveness for agent containers.** A workspace is discovered and its
+conversations counted whether or not its container is up. Probing
+`<container-name>:18790` needs the inventory above, because harness-sphere **never
+computes the container-name hash itself** — that would duplicate a preimage the proxy owns
+and silently diverge the day the prefix or the hash changes.
 
-**2. `Proxy` and `Webapp` exist as layers but nothing fills them.** All three services
-*are* probed and their liveness *is* flowing — but `probe.rs` stamps `Layer::Gateway` on
-every target, so three services share one label.
-
-**3. Per-container CPU and memory** for the agent containers. `ContainerCollector` works
-and is unit-tested, but it takes one cgroup path, and the watcher holds no Docker socket
-by design, so it has no way to learn which cgroups exist.
+**3. Per-container CPU and memory.** `ContainerCollector` works and is unit-tested, but it
+takes one cgroup path and the watcher holds no Docker socket by design, so it has no way
+to learn which cgroups exist.
 
 **4. Token cost — permanently unavailable, not pending.** picoclaw writes no token counts
 to disk and exposes no metrics endpoint. The only path that ever existed was scraping
@@ -354,17 +357,13 @@ deleted. Nothing later in this roadmap brings it back.
 
 ### Next
 
-Two changes, in this order, tracked as groups D and S in the parent repo's
-`.specs/features/harness-sphere-zombie-crab-scope/tasks.md`:
-
-- **Dynamic instance discovery.** The central gap, and an ownership change rather than an
-  increment: `Supervisor::run(self)` consumes `self` and keeps no handle, so the source
-  set is fixed for the process lifetime. Needs owned source names, per-instance probing at
-  discovery, a supervisor that can add and remove sources while running, and per-target
-  probe layers (which is what fills `Proxy` and `Webapp`).
-- **The session collector rewrite.** N workspaces, both session directories, `durable/`
-  and cron excluded, incremental reads that handle a file shrinking. This is the change
-  that finally makes picoclaw usage visible, and it carries the privilege grant.
+- **The proxy inventory client**, and with it the two-surface reconcile: a workspace on
+  disk with no running container becomes *provisioned-not-running* instead of
+  indistinguishable from a live one, and a container with no directory is surfaced as an
+  anomaly rather than dropped.
+- **Per-instance liveness**, probing each agent container by the name the inventory
+  reports.
+- **Per-container CPU and memory**, which needs a cgroup source.
 
 Remaining host signals (disk, network, filesystem) are further out and nothing depends on
 them.

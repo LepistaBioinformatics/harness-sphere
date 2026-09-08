@@ -18,6 +18,7 @@ otlp = ["harnesssphere-export/otlp"]
 
 [dependencies]
 harnesssphere-domain.workspace = true
+async-trait.workspace = true
 harnesssphere-runtime.workspace = true
 harnesssphere-collectors.workspace = true
 harnesssphere-export.workspace = true

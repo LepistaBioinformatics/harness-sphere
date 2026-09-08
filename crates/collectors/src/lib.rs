@@ -10,6 +10,7 @@ mod probe;
 mod process;
 mod self_watcher;
 mod session;
+mod workspace;
 
 pub use container::ContainerCollector;
 pub use host::HostCollector;
@@ -17,3 +18,4 @@ pub use probe::{EndpointProbeCollector, ProbeTarget};
 pub use process::ProcessCollector;
 pub use self_watcher::SelfCollector;
 pub use session::SessionCollector;
+pub use workspace::{discover, Workspace};

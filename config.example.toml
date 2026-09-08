@@ -29,7 +29,11 @@ probe_targets = []
 # Derive AI activity from a harness's on-disk session files (the ClawMetry approach).
 # Emits harnesssphere.harness.messages (by role), tool.calls, harness.sessions.
 # NOTE: tokens are NOT derivable — PicoClaw doesn't write token cost to disk.
-session_dir = ""                 # e.g. "~/.picoclaw/workspace/sessions"
+# Root of crab-shell-proxy's data directory (the one containing tenants/). Empty =
+# workspace discovery disabled. One session collector is created per workspace found.
+data_root = ""
+discovery_interval_secs = 30
+session_interval_secs = 60
 session_source = "picoclaw"      # harness.name label on the emitted metrics
 
 # Read a container's cgroup v2 directly (no Docker socket) -> container.* metrics.
