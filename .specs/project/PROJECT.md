@@ -36,7 +36,9 @@ job, and it is what this watcher is being shaped around.
 5. **Extensible via traits + feature flags.** A new collector = a new module that implements
    `Collector`; the core does not change.
 6. **Idiomatic OTel standard.** Metric/attribute names follow the official *semantic
-   conventions* (system.\*, process.\*, container.\*, http.\*, rpc.\*, gen_ai.\*).
+   conventions* (system.\*, process.\*, container.\*, http.\*). `gen_ai.*` and `rpc.*`
+   are **not** in that list: nothing in this stack produces either, and a convention
+   with no producer is a promise rather than a standard.
 
 ## Non-goals
 
@@ -80,9 +82,9 @@ its *own* container ceiling through `HostCollector`.
 
 ## The six layers
 
-The layer model is being cut from seven to the six this stack actually has. Named
-here because it is the shape everything else follows; the work itself is the
-parent repository's `harness-sphere-zombie-crab-scope`.
+The layer model **is** these six, in code — cut from seven, with no `Other` variant
+and no fallback match arm anywhere, so a seventh kind of thing appearing in this
+stack breaks the build rather than filing itself under a catch-all.
 
 | Layer | Component | Criticality |
 |---|---|---|
@@ -93,8 +95,8 @@ parent repository's `harness-sphere-zombie-crab-scope`.
 | Webapp | `chat-webapp` (repo: `crab-exoskeleton-webapp`) | Optional |
 | Harness | the per-user `picoclaw` containers | Optional |
 
-`Api` and `Tools` go: no zombie-crab source fills either. **`Container` stops
-being a layer and becomes a dimension** — everything here runs in a container, so
+`Api` and `Tools` are gone: no zombie-crab source filled either. **`Container`
+stopped being a layer and became a dimension** — everything here runs in a container, so
 cgroup counters belong to the layer of whatever the container *is*, and a picoclaw
 container's memory is a Harness signal. `tool.calls` survives the loss of the
 `Tools` layer: it comes from picoclaw's session JSONL, which is a real source, and
@@ -106,5 +108,8 @@ moves under Harness.
   threshold). Decisions in `features/telemetry-core/context.md`.
 - [ ] Scaffolding (Cargo workspace, traits, collection runtime) — **next, awaiting go**
 - [ ] Critical collectors (host, self)
-- [ ] Optional collectors (container, gateway, harness, tools, api)
+- [x] Optional collectors (process, endpoint probe, session, container)
+- [x] Scope reduction — Prometheus scraper and OTLP ingest deleted; `Layer` cut to six
+- [ ] Dynamic per-tenant instance discovery — **the central remaining gap**
+- [ ] Per-target probe layers (Gateway/Proxy/Webapp stop sharing one label)
 - [ ] Release / cross-compile pipeline

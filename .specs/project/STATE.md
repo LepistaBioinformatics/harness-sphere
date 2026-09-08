@@ -39,9 +39,39 @@ collect loop keeps running under backoff saturating at 60s. For a per-instance s
 discovered at runtime, answering `NotApplicable` to a recoverable condition means
 never watching that instance again until the process restarts.
 
-**Still to come (F2):** the six-layer cut, deleting `prometheus.rs` and `ingest`, and
-dynamic per-tenant instance discovery. Blocked on measurements only a live deployment
-can produce.
+**The scope reduction (F2, first half) has LANDED.** Net -1,562 lines:
+
+- **`crates/ingest` is gone** (574 LOC), and with it the `Receiver` port, the
+  supervisor's per-receiver task loop and the `ingest` feature. The stack boots
+  `sources=3 receivers=0`; that zero was never a configuration state, it was the shape
+  of the deployment.
+- **`collectors/src/prometheus.rs` is gone** (770 LOC) with its exposition parser,
+  fixture and four config fields. This is the concrete meaning of losing token cost:
+  picoclaw writes no token counts to disk and exposes no `/metrics`, so no collector
+  can recover them. Gone, not deferred.
+- **`Layer` is exactly six:** `Host, Watcher, Gateway, Proxy, Webapp, Harness`. No
+  `Other`, no fallback match arm. `Container` became a dimension (`container.id`)
+  because nearly everything here is containerised, so the variant partitioned nothing;
+  `ContainerCollector` reports `Harness`. `tool.calls` survived the loss of `Tools`.
+- **`Proxy` and `Webapp` arrive empty and stay empty** until probe targets carry their
+  own layer — `probe.rs` still stamps `Gateway` on every target. Expected, not a bug.
+
+Deliberately **not** deleted: the exporter's span/log paths. No collector produces
+either today, but the roadmap still names host health events as logs, and FR-R4 is
+about metrics with no producer, not about export capability.
+
+**Still to come (F2, second half):** dynamic per-tenant instance discovery — owned
+source names, per-instance `probe()` at discovery, and a supervisor that can add and
+remove sources while running.
+
+**F1 OQ-6 is resolved, and not the way the spec predicted.** The watcher could not
+traverse `data/tenants` (`root:root 0700`), which blocked session collection entirely.
+Option 3, *run the watcher as root*, was recorded in F1 as "rejected on sight" — and
+the owner chose it. The rejection was overstated: F1's privilege argument was about the
+**Docker socket**, which grants *control* (start/stop/exec, and a path to the host).
+Root here grants *reading*, against a `:ro` mount, in a process that holds no socket and
+opens no port. Those three constraints are what make it defensible, so they are now
+load-bearing and must not be relaxed one at a time.
 
 ---
 
