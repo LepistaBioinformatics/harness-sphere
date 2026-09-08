@@ -12,9 +12,14 @@ pub enum Criticality {
 }
 
 /// Static metadata for a source.
+///
+/// `name` is an owned `String`, not `&'static str`: a source discovered at runtime is
+/// named after the instance it watches (`session:<tenant>/<subs>/<agent>/<user>`), which
+/// no literal can spell. It is also the registry key the supervisor adds and removes by,
+/// so it must be unique per instance.
 #[derive(Debug, Clone)]
 pub struct SourceDescriptor {
-    pub name: &'static str,
+    pub name: String,
     pub layer: Layer,
     pub criticality: Criticality,
     pub default_interval: Duration,
@@ -65,6 +70,21 @@ pub trait SignalSource: Send + Sync + 'static {
 
     /// One collection cycle; emits signals via `sink`. Errors are isolated by the runtime.
     async fn collect(&mut self, sink: &dyn SignalSink) -> Result<(), CollectError>;
+
+    /// Called once when the supervisor retires this source, before its task ends.
+    ///
+    /// This is how a retired instance goes **absent instead of silent**. A gauge that
+    /// merely stops being written reads as "unchanged" on every dashboard and in every
+    /// alert rule, so a container that died at 92% memory looks like a container sitting
+    /// calmly at 92% forever.
+    ///
+    /// The *source* emits it, not the supervisor: the source is the only thing that knows
+    /// its own attribute set, and a supervisor-synthesised signal would have to
+    /// reconstruct that from the registry key.
+    ///
+    /// Default: nothing. Correct for boot-resolved sources, which are retired only at
+    /// process shutdown, when the distinction does not arise.
+    async fn retire(&mut self, _sink: &dyn SignalSink) {}
 }
 
 /// Driven port: signal destination (OTLP, stdout, ...).

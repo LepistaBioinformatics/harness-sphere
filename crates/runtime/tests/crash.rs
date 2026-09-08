@@ -51,10 +51,10 @@ impl SignalSource for PanicProbe {
     }
 }
 
-fn source(name: &'static str, crit: Criticality) -> Box<dyn SignalSource> {
+fn source(name: &str, crit: Criticality) -> Box<dyn SignalSource> {
     Box::new(AlwaysFail {
         desc: SourceDescriptor {
-            name,
+            name: name.to_owned(),
             layer: Layer::Host,
             criticality: crit,
             default_interval: Duration::from_millis(2),
@@ -83,7 +83,7 @@ async fn critical_probe_panic_is_fatal() {
     // A panic in a Critical source's probe must not die silently — it escalates to fatal.
     let src: Box<dyn SignalSource> = Box::new(PanicProbe {
         desc: SourceDescriptor {
-            name: "host",
+            name: "host".to_owned(),
             layer: Layer::Host,
             criticality: Criticality::Critical,
             default_interval: Duration::from_millis(5),

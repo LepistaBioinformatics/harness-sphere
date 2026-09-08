@@ -39,7 +39,7 @@ impl SessionCollector {
     pub fn new(dir: impl Into<String>, source: impl Into<String>, interval: Duration) -> Self {
         SessionCollector {
             descriptor: SourceDescriptor {
-                name: "session",
+                name: "session".to_owned(),
                 layer: Layer::Harness,
                 criticality: Criticality::Optional,
                 default_interval: interval,

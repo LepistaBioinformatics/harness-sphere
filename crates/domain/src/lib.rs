@@ -16,5 +16,5 @@ pub use ports::{
 };
 pub use signal::{
     AttrValue, Attributes, HistogramPoint, Layer, LogRecord, Metric, MetricKind, Severity, Signal,
-    Span, SpanKind, SpanStatus,
+    Span, SpanKind, SpanStatus, LAYER_ATTR,
 };

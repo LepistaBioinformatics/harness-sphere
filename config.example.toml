@@ -17,7 +17,14 @@ metric_export_interval_secs = 15
 # telemetry (e.g. the PicoClaw gateway). Emits process.* tagged with process.executable.name.
 watch_processes = []             # e.g. ["picoclaw"]
 # TCP liveness + latency probes of local endpoints -> harnesssphere.endpoint.{up,probe.duration}
-probe_targets = []               # e.g. ["localhost:18790"]  (the PicoClaw gateway)
+# TCP liveness/latency probes. Each target names its own layer -- there is no default,
+# because a guessed layer files a service under the wrong one and looks correct.
+# Valid layers: host, watcher, gateway, proxy, webapp, harness.
+#
+#   [[probe_targets]]
+#   address = "mycelium-gateway:8080"
+#   layer   = "gateway"
+probe_targets = []
 
 # Derive AI activity from a harness's on-disk session files (the ClawMetry approach).
 # Emits harnesssphere.harness.messages (by role), tool.calls, harness.sessions.

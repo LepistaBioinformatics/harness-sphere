@@ -33,7 +33,28 @@ pub enum Layer {
     Harness,
 }
 
+/// Attribute key carrying the layer on every emitted signal.
+///
+/// The layer used to be metadata that never left the process: every collector set
+/// `SourceDescriptor.layer` and nothing ever read it — `as_str()` had zero callers — so
+/// no layer reached a backend at all. This is the key that makes the enum load-bearing.
+pub const LAYER_ATTR: &str = "harnesssphere.layer";
+
 impl Layer {
+    /// Parses the config spelling. Deliberately strict and total: an unknown layer is a
+    /// boot-time config error, not something to default away.
+    pub fn parse(s: &str) -> Option<Layer> {
+        match s {
+            "host" => Some(Layer::Host),
+            "watcher" => Some(Layer::Watcher),
+            "gateway" => Some(Layer::Gateway),
+            "proxy" => Some(Layer::Proxy),
+            "webapp" => Some(Layer::Webapp),
+            "harness" => Some(Layer::Harness),
+            _ => None,
+        }
+    }
+
     pub fn as_str(self) -> &'static str {
         match self {
             Layer::Host => "host",
@@ -190,6 +211,15 @@ impl Signal {
     }
 
     /// Read-only view of this signal's attributes.
+    pub fn attributes_mut(&mut self) -> &mut Attributes {
+        match self {
+            Signal::Metric(m) => &mut m.attributes,
+            Signal::Histogram(h) => &mut h.attributes,
+            Signal::Log(l) => &mut l.attributes,
+            Signal::Span(s) => &mut s.attributes,
+        }
+    }
+
     pub fn attributes(&self) -> &Attributes {
         match self {
             Signal::Metric(m) => &m.attributes,
