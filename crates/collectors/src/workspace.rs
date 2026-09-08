@@ -63,6 +63,67 @@ impl Workspace {
         dirs.sort();
         dirs
     }
+
+    /// Every `<workspace>/skills` directory under this workspace.
+    ///
+    /// Same two shapes as `session_dirs`: the main workspace and each
+    /// `workspace-<project>` sibling.
+    pub fn skill_dirs(&self) -> Vec<PathBuf> {
+        self.workspace_subdirs("skills")
+    }
+
+    /// Every `<workspace>/memory` directory under this workspace.
+    pub fn memory_dirs(&self) -> Vec<PathBuf> {
+        self.workspace_subdirs("memory")
+    }
+
+    /// Knowledge-graph files: `memory-graph-<project>/memory.jsonl`.
+    ///
+    /// **A THIRD location rule, and it does not match the other two.** Sessions and memory
+    /// live *inside* `workspace-<project>/`; the graph directory sits at the USER ROOT,
+    /// one level up, named per project. Globbing it like the others -- or assuming a
+    /// single path -- silently drops every project graph, which is the same failure that
+    /// dropped 42% of conversations before `session_dirs` covered both shapes.
+    pub fn graph_files(&self) -> Vec<PathBuf> {
+        let Ok(entries) = std::fs::read_dir(&self.root) else {
+            return Vec::new();
+        };
+        let mut out: Vec<PathBuf> = entries
+            .flatten()
+            .filter_map(|e| {
+                let name = e.file_name();
+                let name = name.to_str()?;
+                if !name.starts_with("memory-graph") {
+                    return None;
+                }
+                let f = e.path().join("memory.jsonl");
+                f.is_file().then_some(f)
+            })
+            .collect();
+        out.sort();
+        out
+    }
+
+    /// `<workspace*>/<leaf>` for every workspace shape, skipping ones that do not have it.
+    fn workspace_subdirs(&self, leaf: &str) -> Vec<PathBuf> {
+        let Ok(entries) = std::fs::read_dir(&self.root) else {
+            return Vec::new();
+        };
+        let mut out: Vec<PathBuf> = entries
+            .flatten()
+            .filter_map(|e| {
+                let name = e.file_name();
+                let name = name.to_str()?;
+                if name != "workspace" && !name.starts_with("workspace-") {
+                    return None;
+                }
+                let d = e.path().join(leaf);
+                d.is_dir().then_some(d)
+            })
+            .collect();
+        out.sort();
+        out
+    }
 }
 
 /// Immediate subdirectory names of `dir`, sorted. Missing or unreadable → empty, never an

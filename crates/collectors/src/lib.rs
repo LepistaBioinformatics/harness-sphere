@@ -6,6 +6,7 @@
 
 mod container;
 mod host;
+mod learning;
 mod probe;
 mod process;
 mod self_watcher;
@@ -14,6 +15,7 @@ mod workspace;
 
 pub use container::ContainerCollector;
 pub use host::HostCollector;
+pub use learning::LearningCollector;
 pub use probe::{EndpointProbeCollector, ProbeTarget};
 pub use process::ProcessCollector;
 pub use self_watcher::SelfCollector;

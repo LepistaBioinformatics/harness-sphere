@@ -111,6 +111,7 @@ async fn main() {
         data_root: std::path::PathBuf::from(&cfg.data_root),
         interval: cfg.discovery_interval(),
         session_interval: cfg.session_interval(),
+        learning_interval: cfg.learning_interval(),
         harness_name: cfg.session_source.clone(),
         workspaces: workspaces.clone(),
         scans: scans.clone(),
