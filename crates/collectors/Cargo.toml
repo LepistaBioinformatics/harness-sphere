@@ -11,7 +11,6 @@ description = "HarnessSphere source collectors (host, self) for the telemetry pi
 # Critical collectors (host, self) are always compiled. Optional ones sit behind a feature.
 default = []
 container = []
-prometheus = []
 
 [dependencies]
 harnesssphere-domain.workspace = true

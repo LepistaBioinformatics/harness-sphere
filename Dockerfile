@@ -19,9 +19,9 @@ RUN apt-get update \
 
 COPY . .
 
-# `otlp` only. `ingest` stays off because nothing in this stack pushes OTLP to
-# us, and `prometheus` stays off because nothing here exposes an exposition
-# endpoint — picoclaw's HTTP surface is /health, /ready and /reload.
+# `otlp` is the only feature. The `ingest` and `prometheus` features no longer
+# exist: nothing in this stack pushes OTLP at us, and nothing exposes an
+# exposition endpoint — picoclaw's HTTP surface is /health, /ready and /reload.
 RUN cargo build --release --bin harnesssphere --features otlp
 
 FROM debian:bookworm-slim AS runtime
