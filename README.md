@@ -289,26 +289,88 @@ is kept on purpose** — the resilience model depends on `catch_unwind`.
 
 ## Project status
 
-**Working today**
-- The hexagonal core: domain model, supervisor, circuit breaker, criticality policy.
-- **Critical** collectors — Host (CPU, memory, swap) and Watcher (own process footprint).
-- **Optional** collectors, each off until configured: watched processes, TCP endpoint
-  probes, on-disk sessions, and cgroup v2 containers (unit-tested against a fake tree).
-- **stdout** and **OTLP/gRPC** exporters, verified end to end against a real collector.
-- Resilience proven by tests: a persistently-failing Critical source exits non-zero; a
-  failing Optional source never brings the watcher down.
-- Deployed in zombie-crab-project as a compose service, with a published GHCR image and
-  a provisioned Grafana dashboard whose every query was verified against live data.
+### What is flowing right now
 
-**Next**
-- **Dynamic instance discovery** — the central gap. Every optional source is single-valued
-  and boot-resolved, while this stack creates containers at runtime. Needs owned source
-  names, per-instance probing at discovery, and a supervisor that can add and remove
-  sources while running.
-- **Per-target probe layers**, so Gateway, Proxy and Webapp stop sharing one label.
-- Remaining host signals (disk, network, filesystem).
+These ten series (5 + 3 + 2) were read off the **live Prometheus** of a running stack, not
+inferred from the code.
 
-The specification and the design decisions live in [`.specs/`](.specs/).
+> **The names in this table are the Prometheus-exposed forms, not the OTel wire names.**
+> The OTLP→Prometheus translation rewrites dots to underscores and appends a unit suffix,
+> so what this tool *emits* as `system.memory.usage` is *scraped* as
+> `system_memory_usage_bytes`. Query with the underscore names; declare instruments with
+> the dotted ones. Elsewhere in this README, dotted names are the emitted form.
+
+| Layer | Series | |
+|---|---|---|
+| **Host** | `system_cpu_utilization`, `system_memory_usage_bytes`, `system_memory_utilization`, `system_paging_usage_bytes`, `system_paging_utilization` | ✅ |
+| **Watcher** | `process_cpu_utilization`, `process_memory_usage_bytes`, `process_memory_virtual_bytes` | ✅ |
+| **Gateway** | `harnesssphere_endpoint_up`, `harnesssphere_endpoint_probe_duration_seconds` | ✅ |
+| **Proxy** | *(probed, but filed under Gateway — see below)* | ⚠️ |
+| **Webapp** | *(probed, but filed under Gateway — see below)* | ⚠️ |
+| **Harness (picoclaw)** | **nothing** | ❌ |
+
+Also working: the hexagonal core (supervisor, circuit breaker, criticality policy), both
+exporters verified end to end, resilience proven by tests (a persistently-failing Critical
+source exits non-zero; a failing Optional source never brings the watcher down), a
+published GHCR image, and a provisioned Grafana dashboard whose every query was checked
+against live data.
+
+### What is missing, and why
+
+**1. picoclaw usage — the layer this tool exists for — collects nothing today.**
+
+`SessionCollector` **is in this tree** and emits exactly the right three metrics —
+`harnesssphere.harness.messages` (by `role`), `harnesssphere.tool.calls`,
+`harnesssphere.harness.sessions`. It is switched **off**: `session_dir = ""` in
+`config.zombie-crab.toml`.
+
+That empty string is deliberate, not an oversight, and filling it in would not fix
+anything. Three independent problems, each of which alone would invalidate the number:
+
+- **It takes one directory, resolved at boot.** The proxy creates a workspace per
+  `(tenant, subscription, agent, user)` at runtime. Pointing the field at one of them
+  produces a metric that describes a single tenant and *reads* like it describes the
+  stack.
+- **It could not read them anyway.** The tenant tree is `root:root 0700`. The privilege
+  that fixes this is real but lands with the session rewrite, not before.
+- **It would count wrong.** Measured on a live workspace: a collector globbing only
+  `workspace/sessions` misses **5 of 12 conversations — 42%** — because project
+  conversations live in a sibling `workspace-<project>/sessions`. And every scheduled-task
+  run writes its own session file, so `harness.sessions` drifts from "conversations" to
+  "conversations plus every cron run since provisioning".
+
+**2. `Proxy` and `Webapp` exist as layers but nothing fills them.** All three services
+*are* probed and their liveness *is* flowing — but `probe.rs` stamps `Layer::Gateway` on
+every target, so three services share one label.
+
+**3. Per-container CPU and memory** for the agent containers. `ContainerCollector` works
+and is unit-tested, but it takes one cgroup path, and the watcher holds no Docker socket
+by design, so it has no way to learn which cgroups exist.
+
+**4. Token cost — permanently unavailable, not pending.** picoclaw writes no token counts
+to disk and exposes no metrics endpoint. The only path that ever existed was scraping
+OpenClaw's Prometheus endpoint, which this stack does not run, and that scraper has been
+deleted. Nothing later in this roadmap brings it back.
+
+### Next
+
+Two changes, in this order, tracked as groups D and S in the parent repo's
+`.specs/features/harness-sphere-zombie-crab-scope/tasks.md`:
+
+- **Dynamic instance discovery.** The central gap, and an ownership change rather than an
+  increment: `Supervisor::run(self)` consumes `self` and keeps no handle, so the source
+  set is fixed for the process lifetime. Needs owned source names, per-instance probing at
+  discovery, a supervisor that can add and remove sources while running, and per-target
+  probe layers (which is what fills `Proxy` and `Webapp`).
+- **The session collector rewrite.** N workspaces, both session directories, `durable/`
+  and cron excluded, incremental reads that handle a file shrinking. This is the change
+  that finally makes picoclaw usage visible, and it carries the privilege grant.
+
+Remaining host signals (disk, network, filesystem) are further out and nothing depends on
+them.
+
+The specification and the design decisions live in [`.specs/`](.specs/) here, and in the
+parent repository under `.specs/features/`.
 
 ---
 
