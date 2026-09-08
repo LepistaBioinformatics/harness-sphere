@@ -38,9 +38,20 @@ pub struct Config {
     /// Endpoints to TCP-probe for liveness/latency, each with the layer it belongs to.
     /// Empty = disabled.
     pub probe_targets: Vec<ProbeTargetCfg>,
-    /// Directory of harness session JSONL files (e.g. "~/.picoclaw/workspace/sessions").
-    /// Empty = disabled. Derives message/tool counts (no tokens — not on disk).
-    pub session_dir: String,
+    /// Root of crab-shell-proxy's data directory — the one containing `tenants/`.
+    /// Empty = workspace discovery disabled.
+    ///
+    /// Replaces the old single-valued `session_dir`. That field could only ever name ONE
+    /// workspace, while this stack creates one per (tenant, subscription, agent, user) at
+    /// runtime, so it produced a metric that described a single member and read like it
+    /// described the stack.
+    pub data_root: String,
+    /// How often to rescan the tenant tree for new or retired workspaces.
+    pub discovery_interval_secs: u64,
+    /// How often each discovered workspace's transcripts are re-read. Slower than
+    /// discovery on purpose: finding a workspace is a directory glob, reading one is IO
+    /// proportional to conversation history.
+    pub session_interval_secs: u64,
     /// Label for the harness whose sessions are read (`harness.name`).
     pub session_source: String,
     /// A container's cgroup v2 directory to read (e.g.
@@ -63,7 +74,9 @@ impl Default for Config {
             metric_export_interval_secs: 15,
             watch_processes: Vec::new(),
             probe_targets: Vec::new(),
-            session_dir: String::new(),
+            data_root: String::new(),
+            discovery_interval_secs: 30,
+            session_interval_secs: 60,
             session_source: "picoclaw".to_owned(),
             container_cgroup: String::new(),
             // Empty → the collector derives the id from the cgroup directory's name.
@@ -96,5 +109,11 @@ impl Config {
     }
     pub fn self_interval(&self) -> Duration {
         Duration::from_secs(self.self_interval_secs.max(1))
+    }
+    pub fn discovery_interval(&self) -> Duration {
+        Duration::from_secs(self.discovery_interval_secs.max(1))
+    }
+    pub fn session_interval(&self) -> Duration {
+        Duration::from_secs(self.session_interval_secs.max(1))
     }
 }

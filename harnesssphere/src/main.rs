@@ -4,14 +4,17 @@
 //! all the concrete adapters. Sprint 1: Critical collectors (host, self) → stdout exporter.
 
 mod config;
+mod discovery;
 
 use std::sync::Arc;
 
 use config::Config;
+use discovery::{Discovery, DiscoveryStats};
 use harnesssphere_collectors::{
     ContainerCollector, EndpointProbeCollector, HostCollector, ProbeTarget, ProcessCollector,
-    SelfCollector, SessionCollector,
+    SelfCollector,
 };
+use std::sync::atomic::AtomicU64;
 use harnesssphere_domain::{Layer, SignalExporter, SignalSource};
 use harnesssphere_export::StdoutExporter;
 use harnesssphere_runtime::{RuntimeConfig, Supervisor};
@@ -75,13 +78,6 @@ async fn main() {
             cfg.host_interval(),
         )));
     }
-    if !cfg.session_dir.is_empty() {
-        sources.push(Box::new(SessionCollector::new(
-            cfg.session_dir.clone(),
-            cfg.session_source.clone(),
-            cfg.host_interval(),
-        )));
-    }
     if !cfg.container_cgroup.is_empty() {
         sources.push(Box::new(ContainerCollector::new(
             cfg.container_cgroup.clone(),
@@ -105,14 +101,48 @@ async fn main() {
         ..Default::default()
     };
 
+    // --- Workspace discovery (control plane) ---
+    // Registered BEFORE the supervisor starts so its counters exist from the first tick;
+    // the scanning task is spawned separately and drives add/remove over the command
+    // channel (DEC-20).
+    let workspaces = Arc::new(AtomicU64::new(0));
+    let scans = Arc::new(AtomicU64::new(0));
+    let discovery = (!cfg.data_root.is_empty()).then(|| Discovery {
+        data_root: std::path::PathBuf::from(&cfg.data_root),
+        interval: cfg.discovery_interval(),
+        session_interval: cfg.session_interval(),
+        harness_name: cfg.session_source.clone(),
+        workspaces: workspaces.clone(),
+        scans: scans.clone(),
+    });
+    if discovery.is_some() {
+        sources.push(Box::new(DiscoveryStats::new(
+            workspaces.clone(),
+            scans.clone(),
+            cfg.self_interval(),
+        )));
+    }
+
     tracing::info!(
         sources = sources.len(),
+        discovery = discovery.is_some(),
         exporter = %cfg.exporter,
         "HarnessSphere starting"
     );
 
     let supervisor = Supervisor::new(rt_cfg, sources, exporter);
-    match supervisor.run().await {
+    let discovery_task = discovery.map(|d| {
+        let cmds = supervisor.commands();
+        tokio::spawn(d.run(cmds))
+    });
+
+    let outcome = supervisor.run().await;
+    // Stop scanning before reporting: a discovery tick landing after shutdown would try to
+    // push commands into a supervisor that is gone, and log a misleading warning.
+    if let Some(t) = discovery_task {
+        t.abort();
+    }
+    match outcome {
         Ok(()) => {
             tracing::info!("shut down gracefully");
         }

@@ -295,6 +295,7 @@ name = "harnesssphere"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "harnesssphere-collectors",
  "harnesssphere-domain",
  "harnesssphere-export",
