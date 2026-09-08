@@ -291,8 +291,14 @@ is kept on purpose** — the resilience model depends on `catch_unwind`.
 
 ### What is flowing right now
 
-These ten series were read off the **live Prometheus** of a running stack, not inferred
-from the code:
+These ten series (5 + 3 + 2) were read off the **live Prometheus** of a running stack, not
+inferred from the code.
+
+> **The names in this table are the Prometheus-exposed forms, not the OTel wire names.**
+> The OTLP→Prometheus translation rewrites dots to underscores and appends a unit suffix,
+> so what this tool *emits* as `system.memory.usage` is *scraped* as
+> `system_memory_usage_bytes`. Query with the underscore names; declare instruments with
+> the dotted ones. Elsewhere in this README, dotted names are the emitted form.
 
 | Layer | Series | |
 |---|---|---|
