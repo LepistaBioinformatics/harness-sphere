@@ -20,10 +20,6 @@ pub struct Config {
     pub service_name: String,
     /// Cadence (seconds) of the periodic OTLP metrics reader.
     pub metric_export_interval_secs: u64,
-    /// Enable the local OTLP ingest receiver (feature `ingest`).
-    pub ingest_enabled: bool,
-    /// Address the OTLP ingest receiver binds to (gRPC).
-    pub ingest_endpoint: String,
     /// Process executable-name substrings to watch (e.g. ["picoclaw"]). Empty = disabled.
     pub watch_processes: Vec<String>,
     /// `host:port` endpoints to TCP-probe for liveness/latency. Empty = disabled.
@@ -64,10 +60,6 @@ impl Default for Config {
             otlp_endpoint: "http://localhost:4317".to_owned(),
             service_name: "harnesssphere".to_owned(),
             metric_export_interval_secs: 15,
-            ingest_enabled: false,
-            // Default to :4318 so a single instance with both exporter+ingest on defaults
-            // doesn't form a telemetry loop with the :4317 OTLP exporter target.
-            ingest_endpoint: "0.0.0.0:4318".to_owned(),
             watch_processes: Vec::new(),
             probe_targets: Vec::new(),
             session_dir: String::new(),

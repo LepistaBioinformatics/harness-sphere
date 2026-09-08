@@ -298,7 +298,6 @@ dependencies = [
  "harnesssphere-collectors",
  "harnesssphere-domain",
  "harnesssphere-export",
- "harnesssphere-ingest",
  "harnesssphere-runtime",
  "serde",
  "tokio",
@@ -338,18 +337,6 @@ dependencies = [
  "opentelemetry-otlp",
  "opentelemetry-proto",
  "opentelemetry_sdk",
- "tonic",
- "tracing",
-]
-
-[[package]]
-name = "harnesssphere-ingest"
-version = "0.2.0"
-dependencies = [
- "async-trait",
- "harnesssphere-domain",
- "opentelemetry-proto",
- "tokio",
  "tonic",
  "tracing",
 ]

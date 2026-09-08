@@ -5,7 +5,6 @@ members = [
     "crates/runtime",
     "crates/collectors",
     "crates/export",
-    "crates/ingest",
     "harnesssphere",
 ]
 
@@ -26,7 +25,6 @@ harnesssphere-domain = { path = "crates/domain", version = "0.2.0" }
 harnesssphere-runtime = { path = "crates/runtime", version = "0.2.0" }
 harnesssphere-collectors = { path = "crates/collectors", version = "0.2.0" }
 harnesssphere-export = { path = "crates/export", version = "0.2.0" }
-harnesssphere-ingest = { path = "crates/ingest", version = "0.2.0" }
 
 async-trait = "0.1"
 thiserror = "2"

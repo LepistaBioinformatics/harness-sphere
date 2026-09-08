@@ -12,9 +12,6 @@ otlp_endpoint = "http://localhost:4317"
 service_name = "harnesssphere"
 metric_export_interval_secs = 15
 
-# Local OTLP ingest receiver (build with --features ingest)
-ingest_enabled = false           # accept OTLP that OpenClaw/Hermes push to us
-ingest_endpoint = "0.0.0.0:4318" # gRPC bind address for the receiver
 
 # Optional, harness-independent: observe co-located processes that don't export their own
 # telemetry (e.g. the PicoClaw gateway). Emits process.* tagged with process.executable.name.
