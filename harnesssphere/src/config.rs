@@ -7,7 +7,13 @@ use serde::Deserialize;
 /// Both fields are REQUIRED -- there is no default layer. A target whose layer was
 /// guessed would file the proxy or the webapp under whatever the guess was, which is the
 /// exact defect this replaced: one collector stamping one layer on every target.
+/// `deny_unknown_fields` is load-bearing, not tidiness. In TOML every bare key after a
+/// `[[probe_targets]]` header belongs to THAT table until the next header, so a scalar
+/// written below the probe list is silently absorbed into the last target. Without this,
+/// serde drops it and the option reads as unset -- which is how `data_root` went missing
+/// with no error anywhere.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProbeTargetCfg {
     /// `host:port`. The port is not optional.
     pub address: String,
