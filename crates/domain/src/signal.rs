@@ -7,15 +7,30 @@
 use std::time::SystemTime;
 
 /// Monitored layer (logical origin of the signal).
+///
+/// These six are the zombie-crab stack, exhaustively: the machine, the watcher
+/// itself, and the four things the machine runs. There is deliberately no `Other`
+/// and no fallback match arm — a seventh kind of thing appearing in this stack
+/// should break the build, not quietly file itself under a catch-all.
+///
+/// `Container` used to be a variant and is not one any more. Being containerised is
+/// a property of nearly everything here, so it partitioned nothing; container
+/// identity is now an attribute (`container.id`) on whichever layer the container
+/// belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Layer {
+    /// The physical machine (hospedeiro). Not this container -- /proc is not namespaced.
     Host,
+    /// harness-sphere itself.
     Watcher,
-    Container,
+    /// mycelium-api-gateway.
     Gateway,
+    /// crab-shell-proxy.
+    Proxy,
+    /// crab-exoskeleton-webapp (chat-webapp).
+    Webapp,
+    /// picoclaw agent instances -- the per-tenant containers this stack exists to run.
     Harness,
-    Tools,
-    Api,
 }
 
 impl Layer {
@@ -23,11 +38,10 @@ impl Layer {
         match self {
             Layer::Host => "host",
             Layer::Watcher => "watcher",
-            Layer::Container => "container",
             Layer::Gateway => "gateway",
+            Layer::Proxy => "proxy",
+            Layer::Webapp => "webapp",
             Layer::Harness => "harness",
-            Layer::Tools => "tools",
-            Layer::Api => "api",
         }
     }
 }

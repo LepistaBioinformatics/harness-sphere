@@ -35,7 +35,9 @@ impl ContainerCollector {
         ContainerCollector {
             descriptor: SourceDescriptor {
                 name: "container",
-                layer: Layer::Container,
+                // Harness, not a layer of its own: in this stack a watched cgroup is a
+                // picoclaw agent container. `container.id` carries the identity.
+                layer: Layer::Harness,
                 criticality: Criticality::Optional,
                 default_interval: interval,
             },
