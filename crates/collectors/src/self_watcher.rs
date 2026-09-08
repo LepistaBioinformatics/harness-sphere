@@ -20,7 +20,7 @@ impl SelfCollector {
         let pid = get_current_pid().map_err(|e| format!("current pid unavailable: {e}"))?;
         Ok(SelfCollector {
             descriptor: SourceDescriptor {
-                name: "self",
+                name: "self".to_owned(),
                 layer: Layer::Watcher,
                 criticality: Criticality::Critical,
                 default_interval: interval,

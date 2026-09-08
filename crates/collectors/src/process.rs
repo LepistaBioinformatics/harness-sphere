@@ -24,7 +24,7 @@ impl ProcessCollector {
     pub fn new(names: Vec<String>, interval: Duration) -> Self {
         ProcessCollector {
             descriptor: SourceDescriptor {
-                name: "process",
+                name: "process".to_owned(),
                 layer: Layer::Host,
                 criticality: Criticality::Optional,
                 default_interval: interval,

@@ -24,7 +24,7 @@ impl EndpointProbeCollector {
     pub fn new(targets: Vec<String>, interval: Duration) -> Self {
         EndpointProbeCollector {
             descriptor: SourceDescriptor {
-                name: "endpoint-probe",
+                name: "endpoint-probe".to_owned(),
                 layer: Layer::Gateway,
                 criticality: Criticality::Optional,
                 default_interval: interval,

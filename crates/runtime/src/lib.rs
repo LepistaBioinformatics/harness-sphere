@@ -63,7 +63,7 @@ impl Default for RuntimeConfig {
 /// Signals the top-level supervisor that a Critical source has died irrecoverably.
 #[derive(Debug)]
 pub struct FatalSignal {
-    pub source: &'static str,
+    pub source: String,
     pub reason: String,
 }
 
@@ -124,7 +124,7 @@ impl Supervisor {
                     if desc.criticality == Criticality::Critical {
                         let _ = fatal_tx
                             .send(FatalSignal {
-                                source: desc.name,
+                                source: desc.name.clone(),
                                 reason: "supervisor task panicked".into(),
                             })
                             .await;
@@ -185,7 +185,7 @@ async fn supervise_source(
         ProbeResult::Fatal(msg) => {
             let _ = fatal_tx
                 .send(FatalSignal {
-                    source: desc.name,
+                    source: desc.name.clone(),
                     reason: format!("probe fatal: {msg}"),
                 })
                 .await;
@@ -236,7 +236,7 @@ async fn supervise_source(
 }
 
 async fn handle_failure(
-    name: &'static str,
+    name: &str,
     criticality: Criticality,
     breaker: &mut CircuitBreaker,
     fatal_tx: &mpsc::Sender<FatalSignal>,
@@ -251,7 +251,7 @@ async fn handle_failure(
             tracing::error!(source = name, %err, "persistent CRITICAL failure — shutting down");
             let _ = fatal_tx
                 .send(FatalSignal {
-                    source: name,
+                    source: name.to_owned(),
                     reason: err,
                 })
                 .await;

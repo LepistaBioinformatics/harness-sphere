@@ -12,9 +12,14 @@ pub enum Criticality {
 }
 
 /// Static metadata for a source.
+///
+/// `name` is an owned `String`, not `&'static str`: a source discovered at runtime is
+/// named after the instance it watches (`session:<tenant>/<subs>/<agent>/<user>`), which
+/// no literal can spell. It is also the registry key the supervisor adds and removes by,
+/// so it must be unique per instance.
 #[derive(Debug, Clone)]
 pub struct SourceDescriptor {
-    pub name: &'static str,
+    pub name: String,
     pub layer: Layer,
     pub criticality: Criticality,
     pub default_interval: Duration,

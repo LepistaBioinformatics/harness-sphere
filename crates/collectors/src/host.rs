@@ -18,7 +18,7 @@ impl HostCollector {
     pub fn new(interval: Duration) -> Self {
         HostCollector {
             descriptor: SourceDescriptor {
-                name: "host",
+                name: "host".to_owned(),
                 layer: Layer::Host,
                 criticality: Criticality::Critical,
                 default_interval: interval,
