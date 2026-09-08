@@ -1,6 +1,51 @@
 # STATE — HarnessSphere project memory
 
-## Snapshot (2026-06-18) — current
+## Snapshot (2026-09-07) — current
+
+**Adopted by zombie-crab and repurposed to serve it exclusively.** This repository is
+now a submodule of
+[zombie-crab-project](https://github.com/LepistaBioinformatics/zombie-crab-project) at
+`crab/harness-sphere`. The planning record is in the parent repo (AD-022 in its
+`STATE.md`; specs under `.specs/features/harness-sphere-integration/` and
+`.specs/features/harness-sphere-zombie-crab-scope/`).
+
+**Why repurposing in place was cheap, and it was checked rather than assumed:** 0
+stars, 0 forks, 0 open issues, and `harnesssphere` was never published to crates.io —
+the publish workflow was manual and only ever dry-run. No external consumer to break.
+The cost is real and accepted: the generic seven-layer vision ends, and getting a
+generic watcher back means forking out of a tree that will have lost a third of its
+collectors.
+
+**This change (F1) is documents and packaging only — NO Rust was touched.** That is
+deliberate: the first run against the live stack must test the tree whose behaviour is
+documented, so anything that breaks is either a deployment fact or a real upstream
+limitation, with no third candidate.
+
+**What landed here:** exclusivity stated in `PROJECT.md` and `README.md`;
+`publish-crates.yml` deleted (binary releases kept); a two-stage `Dockerfile`
+(`--features otlp`, no `ingest`, no `prometheus`, non-root runtime); and
+`config.zombie-crab.toml`.
+
+**Measured during planning, worth not re-deriving:** a container capped at `-m 512m`
+reported the **host's** 33 GB through `HostCollector` and ignored the cgroup limit
+entirely — `sysinfo` reads `/proc/meminfo`, which Docker does not namespace. So the
+watcher runs as a compose service with **no `/proc` or `/sys` bind**. The converse
+holds too: it cannot see its own container ceiling that way.
+
+**A runtime detail that is a loaded gun for the dynamic work (F2):**
+`ProbeResult::NotApplicable` **permanently drops a source** — `runtime/src/lib.rs`
+logs and returns from the task. `Unavailable` does not: it trips the breaker and the
+collect loop keeps running under backoff saturating at 60s. For a per-instance source
+discovered at runtime, answering `NotApplicable` to a recoverable condition means
+never watching that instance again until the process restarts.
+
+**Still to come (F2):** the six-layer cut, deleting `prometheus.rs` and `ingest`, and
+dynamic per-tenant instance discovery. Blocked on measurements only a live deployment
+can produce.
+
+---
+
+## Snapshot (2026-06-18) — superseded by the above
 
 Repo: https://github.com/LepistaBioinformatics/harness-sphere (PUBLIC, `main`). 10 PRs
 merged (#1–#10), `main` @ green. 11 tests pass. Toolchain Rust stable 1.96 / edition 2024.
