@@ -6,6 +6,14 @@ HarnessSphere is a single self-contained binary that watches one stack: the mach
 runs on, itself, and the four services zombie-crab runs. It turns what it finds into
 standard **OpenTelemetry** metrics and ships them to whatever backend you point it at.
 
+This README is the reference for the watcher itself. For how it fits into the
+stack around it — what an operator sees, how the observability compose file is
+run, and why the two rules below exist — read the
+[observability chapter](https://lepistabioinformatics.github.io/zombie-crab-project/42-observability.html)
+of the zombie-crab documentation, or
+[the book](https://lepistabioinformatics.github.io/zombie-crab-project/) from the
+start.
+
 > ### This tool is exclusive to zombie-crab
 >
 > It started as a general-purpose watcher for any host running the Claw/Harness
